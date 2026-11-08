@@ -41,8 +41,10 @@ test = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/vinayhpandya/mlx_cluster"
-Issues = "https://github.com/vinayhpandya/mlx_cluster/Issues"
+Homepage = "https://github.com/mlx-graphs/mlx_cluster"
+Documentation = "https://mlx-graphs.github.io/mlx_cluster/"
+Repository = "https://github.com/mlx-graphs/mlx_cluster"
+Issues = "https://github.com/mlx-graphs/mlx_cluster/issues"
 
 [tool.pytest.ini_options]
 addopts = "-ra"
