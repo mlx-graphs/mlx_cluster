@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="_static/documentation_options.js?v=84249e4d"></script>
+    <script src="_static/documentation_options.js?v=205c1a54"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/scripts/sphinx-book-theme.js?v=efea14e4"></script>
@@ -165,6 +165,10 @@
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Guides</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="sparse.html">Sparse Matrix Multiplication (SpMM)</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Functions and APIs</span></p>
 <ul class="nav bd-sidenav">
@@ -403,7 +407,7 @@
                   
   <section id="mlx-cluster-documentation">
 <h1>MLX-Cluster Documentation<a class="headerlink" href="#mlx-cluster-documentation" title="Link to this heading">#</a></h1>
-<p>Welcome to the mlx-cluster documentation! This library provides high-performance graph algorithms optimized for Apple's MLX framework, including random walks and neighbor sampling.</p>
+<p>Welcome to the mlx-cluster documentation! This library provides high-performance graph algorithms optimized for Apple's MLX framework, including random walks, neighbor sampling and sparse matrix multiplication (SpMM) for GNN message passing.</p>
 <div class="toctree-wrapper compound">
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Installation and Quickstart</span></p>
 <ul>
@@ -423,7 +427,24 @@
 <li class="toctree-l2"><a class="reference internal" href="quickstart.html#random-walks">Random Walks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quickstart.html#biased-random-walks-node2vec-style">Biased Random Walks (Node2Vec style)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quickstart.html#neighbor-sampling">Neighbor Sampling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#sparse-matrix-multiplication">Sparse Matrix Multiplication</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quickstart.html#key-features">Key Features</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Guides</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="sparse.html">Sparse Matrix Multiplication (SpMM)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sparse.html#why-use-it">Why use it</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sparse.html#quick-example">Quick example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sparse.html#coo-or-csr">COO or CSR?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sparse.html#reductions">Reductions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sparse.html#high-degree-nodes-load-balancing">High-degree nodes (load balancing)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sparse.html#fast-backward-pass-transpose">Fast backward pass (transpose)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sparse.html#using-it-from-mlx-graphs">Using it from mlx-graphs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sparse.html#limitations">Limitations</a></li>
 </ul>
 </li>
 </ul>
@@ -432,10 +453,8 @@
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Functions and APIs</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="functions.html">API Reference</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="functions.html#mlx_cluster.random_walk"><code class="docutils literal notranslate"><span class="pre">random_walk()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="functions.html#mlx_cluster.rejection_sampling"><code class="docutils literal notranslate"><span class="pre">rejection_sampling()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="functions.html#mlx_cluster.neighbor_sample"><code class="docutils literal notranslate"><span class="pre">neighbor_sample()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="functions.html#heterogeneous-graphs">Heterogeneous graphs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="functions.html#sparse-matrix-multiplication">Sparse matrix multiplication</a></li>
 </ul>
 </li>
 </ul>
