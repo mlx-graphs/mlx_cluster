@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="_static/documentation_options.js?v=84249e4d"></script>
+    <script src="_static/documentation_options.js?v=205c1a54"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/scripts/sphinx-book-theme.js?v=efea14e4"></script>
@@ -48,7 +48,7 @@
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="API Reference" href="functions.html" />
+    <link rel="next" title="Sparse Matrix Multiplication (SpMM)" href="sparse.html" />
     <link rel="prev" title="Installation" href="Installation.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
@@ -164,6 +164,10 @@
 <ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
 <li class="toctree-l1 current active"><a aria-current="page" class="current reference internal" href="#">Quick Start</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Guides</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="sparse.html">Sparse Matrix Multiplication (SpMM)</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Functions and APIs</span></p>
 <ul class="nav bd-sidenav">
@@ -387,6 +391,7 @@
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#random-walks">Random Walks</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#biased-random-walks-node2vec-style">Biased Random Walks (Node2Vec style)</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#neighbor-sampling">Neighbor Sampling</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sparse-matrix-multiplication">Sparse Matrix Multiplication</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#key-features">Key Features</a></li>
 </ul>
             </nav>
@@ -491,12 +496,33 @@
 </pre></div>
 </div>
 </section>
+<section id="sparse-matrix-multiplication">
+<h2>Sparse Matrix Multiplication<a class="headerlink" href="#sparse-matrix-multiplication" title="Link to this heading">#</a></h2>
+<p>Aggregate neighbour features without building a per-edge message array:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">mlx.core</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mx</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">mlx_cluster</span><span class="w"> </span><span class="kn">import</span> <span class="n">coo_to_csr</span><span class="p">,</span> <span class="n">spmm_coo</span><span class="p">,</span> <span class="n">spmm_csr</span>
+
+<span class="n">src</span><span class="p">,</span> <span class="n">dst</span> <span class="o">=</span> <span class="n">edge_index</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">edge_index</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>          <span class="c1"># mlx-graphs convention</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">((</span><span class="n">num_nodes</span><span class="p">,</span> <span class="mi">64</span><span class="p">))</span>
+
+<span class="c1"># sum / mean / max / min of incoming neighbour features</span>
+<span class="n">out</span> <span class="o">=</span> <span class="n">spmm_coo</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">num_rows</span><span class="o">=</span><span class="n">num_nodes</span><span class="p">,</span> <span class="n">reduce</span><span class="o">=</span><span class="s2">"mean"</span><span class="p">)</span>
+
+<span class="c1"># CSR: build once per graph, faster on medium/large graphs</span>
+<span class="n">csr</span> <span class="o">=</span> <span class="n">coo_to_csr</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">num_nodes</span><span class="p">)</span>
+<span class="n">out</span> <span class="o">=</span> <span class="n">spmm_csr</span><span class="p">(</span><span class="n">csr</span><span class="o">.</span><span class="n">rowptr</span><span class="p">,</span> <span class="n">csr</span><span class="o">.</span><span class="n">col</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">reduce</span><span class="o">=</span><span class="s2">"max"</span><span class="p">,</span>
+               <span class="n">long_rows</span><span class="o">=</span><span class="n">csr</span><span class="o">.</span><span class="n">long_rows</span><span class="p">,</span> <span class="n">transpose</span><span class="o">=</span><span class="n">csr</span><span class="o">.</span><span class="n">transpose</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>See <a class="reference internal" href="sparse.html"><span class="doc">Sparse Matrix Multiplication (SpMM)</span></a> for details.</p>
+</section>
 <section id="key-features">
 <h2>Key Features<a class="headerlink" href="#key-features" title="Link to this heading">#</a></h2>
 <ul class="simple">
 <li><p><strong>MLX Optimized</strong>: Built specifically for Apple's MLX framework</p></li>
 <li><p><strong>Fast Performance</strong>: Optimized for Apple Silicon hardware with GPU support(Only random walks)</p></li>
 <li><p><strong>Graph Algorithms</strong>: Random walks, biased random walks, and neighbor sampling</p></li>
+<li><p><strong>Fused message passing</strong>: SpMM (sum/mean/max/min) with gradients, on GPU</p></li>
 <li><p><strong>Flexible</strong>: Support for both directed and undirected graphs</p></li>
 <li><p><strong>Memory Efficient</strong>: Efficient CSR/CSC graph representations</p></li>
 </ul>
@@ -524,11 +550,11 @@
       </div>
     </a>
     <a class="right-next"
-       href="functions.html"
+       href="sparse.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">API Reference</p>
+        <p class="prev-next-title">Sparse Matrix Multiplication (SpMM)</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -552,6 +578,7 @@
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#random-walks">Random Walks</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#biased-random-walks-node2vec-style">Biased Random Walks (Node2Vec style)</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#neighbor-sampling">Neighbor Sampling</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sparse-matrix-multiplication">Sparse Matrix Multiplication</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#key-features">Key Features</a></li>
 </ul>
   </nav></div>

@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+
+
+<html lang="Python" data-content_root="./" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Sparse Matrix Multiplication (SpMM) &#8212; mlx-cluster documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/sphinx-book-theme.css?v=384b581d" />
+    <link rel="stylesheet" type="text/css" href="_static/sg_gallery.css?v=61a4c737" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="_static/scripts/fontawesome.js?digest=75c7c72ae941e8b558d8"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
+
+    <script src="_static/documentation_options.js?v=205c1a54"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/scripts/sphinx-book-theme.js?v=efea14e4"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'sparse';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="API Reference" href="functions.html" />
+    <link rel="prev" title="Quick Start" href="quickstart.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="Python"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="_static/searchtools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal" tabindex="-1"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">MLX-Cluster</p>
+  
+</a></div>
+        <div class="sidebar-primary-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/vinayhpandya/mlx_cluster" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        <div class="sidebar-primary-item">
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Installation and Quickstart</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Guides</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a aria-current="page" class="current reference internal" href="#">Sparse Matrix Multiplication (SpMM)</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Functions and APIs</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="functions.html">API Reference</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><label class="sidebar-toggle primary-toggle btn btn-sm" for="__primary" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</label></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-source-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Source repositories">
+    <i class="fab fa-github"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://github.com/vinayhpandya/mlx_cluster" target="_blank"
+   class="btn btn-sm btn-source-repository-button dropdown-item"
+   title="Source repository"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+<span class="btn__text-container">Repository</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/vinayhpandya/mlx_cluster/edit/main/sparse.rst" target="_blank"
+   class="btn btn-sm btn-source-edit-button dropdown-item"
+   title="Suggest edit"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-pencil-alt"></i>
+  </span>
+<span class="btn__text-container">Suggest edit</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/vinayhpandya/mlx_cluster/issues/new?title=Issue%20on%20page%20%2Fsparse.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button dropdown-item"
+   title="Open an issue"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="btn__text-container">Open issue</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="_sources/sparse.rst" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.rst</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
+  </ul>
+</div>
+
+
+<button type="button" class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button>
+<label class="sidebar-toggle secondary-toggle btn btn-sm" for="__secondary"title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</label>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>Sparse Matrix Multiplication (SpMM)</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#why-use-it">Why use it</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#quick-example">Quick example</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#coo-or-csr">COO or CSR?</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#reductions">Reductions</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#high-degree-nodes-load-balancing">High-degree nodes (load balancing)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#fast-backward-pass-transpose">Fast backward pass (transpose)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#using-it-from-mlx-graphs">Using it from mlx-graphs</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#limitations">Limitations</a></li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="sparse-matrix-multiplication-spmm">
+<h1>Sparse Matrix Multiplication (SpMM)<a class="headerlink" href="#sparse-matrix-multiplication-spmm" title="Link to this heading">#</a></h1>
+<p>mlx-cluster provides fused sparse × dense matrix multiplication kernels for
+graph neural network message passing. They compute</p>
+<div class="math notranslate nohighlight">
+\[\text{out}[r, f] = \mathrm{reduce}_{\,e \,:\, \text{row}[e] = r}
+\; \text{values}[e] \cdot x[\text{col}[e], f]\]</div>
+<p>where the sparse matrix <code class="docutils literal notranslate"><span class="pre">A</span></code> is the graph (one non-zero per edge) and <code class="docutils literal notranslate"><span class="pre">x</span></code>
+holds the node features. In message-passing terms, <code class="docutils literal notranslate"><span class="pre">row</span></code> is each edge's
+destination node, <code class="docutils literal notranslate"><span class="pre">col</span></code> its source node and <code class="docutils literal notranslate"><span class="pre">values</span></code> an optional edge
+weight.</p>
+<section id="why-use-it">
+<h2>Why use it<a class="headerlink" href="#why-use-it" title="Link to this heading">#</a></h2>
+<p>The usual <em>gather-scatter</em> message passing first gathers <code class="docutils literal notranslate"><span class="pre">x[col]</span></code> into an
+array with one row <strong>per edge</strong> (<code class="docutils literal notranslate"><span class="pre">[num_edges,</span> <span class="pre">features]</span></code>) and then scatters
+it into the destination nodes. On large graphs that per-edge array dominates
+memory and time. The SpMM kernels read each neighbour's features and combine
+them directly into the output, so only node-sized arrays are ever allocated,
+in the forward <strong>and</strong> the backward pass.</p>
+<p>Measured on an Apple M4 Pro (one training step = forward + backward, GCN
+layer, 1M edges, 256 features): about <strong>4x faster</strong> and <strong>4.6x less memory</strong>
+than gather-scatter (2.36 GB → 509 MB). The gain grows with
+<code class="docutils literal notranslate"><span class="pre">num_edges</span> <span class="pre">×</span> <span class="pre">features</span></code>; on very small graphs (e.g. Cora) it is about
+break-even.</p>
+</section>
+<section id="quick-example">
+<h2>Quick example<a class="headerlink" href="#quick-example" title="Link to this heading">#</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">mlx.core</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mx</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">mlx_cluster</span><span class="w"> </span><span class="kn">import</span> <span class="n">coo_to_csr</span><span class="p">,</span> <span class="n">spmm_coo</span><span class="p">,</span> <span class="n">spmm_csr</span>
+
+<span class="c1"># edge_index = [src, dst], as in mlx-graphs</span>
+<span class="n">edge_index</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]])</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">16</span><span class="p">))</span>
+<span class="n">src</span><span class="p">,</span> <span class="n">dst</span> <span class="o">=</span> <span class="n">edge_index</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">edge_index</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+<span class="c1"># COO: works directly on the edge list</span>
+<span class="n">out</span> <span class="o">=</span> <span class="n">spmm_coo</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">reduce</span><span class="o">=</span><span class="s2">"sum"</span><span class="p">)</span>         <span class="c1"># == scatter(x[src], dst, "add")</span>
+
+<span class="c1"># CSR: sort once per graph, then reuse</span>
+<span class="n">csr</span> <span class="o">=</span> <span class="n">coo_to_csr</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">num_rows</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">out</span> <span class="o">=</span> <span class="n">spmm_csr</span><span class="p">(</span>
+    <span class="n">csr</span><span class="o">.</span><span class="n">rowptr</span><span class="p">,</span> <span class="n">csr</span><span class="o">.</span><span class="n">col</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span>
+    <span class="n">reduce</span><span class="o">=</span><span class="s2">"max"</span><span class="p">,</span>
+    <span class="n">long_rows</span><span class="o">=</span><span class="n">csr</span><span class="o">.</span><span class="n">long_rows</span><span class="p">,</span>     <span class="c1"># load balancing for high-degree nodes</span>
+    <span class="n">transpose</span><span class="o">=</span><span class="n">csr</span><span class="o">.</span><span class="n">transpose</span><span class="p">,</span>     <span class="c1"># fast, deterministic backward pass</span>
+<span class="p">)</span>
+
+<span class="c1"># gradients work as usual</span>
+<span class="n">grad</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">spmm_coo</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">reduce</span><span class="o">=</span><span class="s2">"mean"</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">())(</span><span class="n">x</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="coo-or-csr">
+<h2>COO or CSR?<a class="headerlink" href="#coo-or-csr" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 40.0%" />
+<col style="width: 40.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"></th>
+<th class="head"><p><code class="xref py py-func docutils literal notranslate"><span class="pre">spmm_coo()</span></code></p></th>
+<th class="head"><p><code class="xref py py-func docutils literal notranslate"><span class="pre">spmm_csr()</span></code></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Input</p></td>
+<td><p>The edge list as-is, any order</p></td>
+<td><p>CSR from <code class="xref py py-func docutils literal notranslate"><span class="pre">coo_to_csr()</span></code> (one sort per graph; cache it)</p></td>
+</tr>
+<tr class="row-odd"><td><p>GPU kernel</p></td>
+<td><p>One thread per (edge, feature); atomic adds</p></td>
+<td><p>One thread per (node, feature); no atomics</p></td>
+</tr>
+<tr class="row-even"><td><p>Determinism</p></td>
+<td><p>Forward <code class="docutils literal notranslate"><span class="pre">max</span></code>/<code class="docutils literal notranslate"><span class="pre">min</span></code> are exact; <code class="docutils literal notranslate"><span class="pre">sum</span></code>/<code class="docutils literal notranslate"><span class="pre">mean</span></code> and all gradients
+w.r.t. <code class="docutils literal notranslate"><span class="pre">x</span></code> may differ in the last bits between runs</p></td>
+<td><p>Bit-identical results and gradients every run (with <code class="docutils literal notranslate"><span class="pre">transpose</span></code>)</p></td>
+</tr>
+<tr class="row-odd"><td><p>Best for</p></td>
+<td><p>Small graphs, or graphs that change every step</p></td>
+<td><p>Medium and large graphs (fastest in our benchmarks)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="reductions">
+<span id="id1"></span><h2>Reductions<a class="headerlink" href="#reductions" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">reduce</span></code> selects how the messages arriving at a node are combined, per
+feature:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 15.0%" />
+<col style="width: 45.0%" />
+<col style="width: 40.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><code class="docutils literal notranslate"><span class="pre">reduce</span></code></p></th>
+<th class="head"><p>Forward</p></th>
+<th class="head"><p>Gradient</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&quot;sum&quot;</span></code> / <code class="docutils literal notranslate"><span class="pre">&quot;add&quot;</span></code></p></td>
+<td><p>Sum of the messages</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">A^T</span> <span class="pre">&#64;</span> <span class="pre">grad</span></code> for <code class="docutils literal notranslate"><span class="pre">x</span></code>; one dot product per edge for <code class="docutils literal notranslate"><span class="pre">values</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">&quot;mean&quot;</span></code></p></td>
+<td><p>Sum divided by the number of incoming edges</p></td>
+<td><p>As <code class="docutils literal notranslate"><span class="pre">sum</span></code>, scaled by <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">/</span> <span class="pre">degree</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&quot;max&quot;</span></code></p></td>
+<td><p>Largest message</p></td>
+<td><p>Every edge whose message equals the output gets the full gradient
+(ties included)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">&quot;min&quot;</span></code></p></td>
+<td><p>Smallest message</p></td>
+<td><p>As <code class="docutils literal notranslate"><span class="pre">max</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Conventions, matching mlx-graphs' <code class="docutils literal notranslate"><span class="pre">scatter</span></code>:</p>
+<ul class="simple">
+<li><p>Nodes without incoming edges get <code class="docutils literal notranslate"><span class="pre">0</span></code> for every reduction (not <code class="docutils literal notranslate"><span class="pre">±inf</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">max</span></code>/<code class="docutils literal notranslate"><span class="pre">min</span></code> are the true maximum/minimum, so an all-negative
+neighbourhood gives a negative result.</p></li>
+<li><p>With <code class="docutils literal notranslate"><span class="pre">max</span></code>/<code class="docutils literal notranslate"><span class="pre">min</span></code>, an exact tie (e.g. a duplicated edge) gives the full
+gradient to <strong>every</strong> tied edge, exactly like MLX's <code class="docutils literal notranslate"><span class="pre">scatter</span></code> max/min
+gradient. The backward pass recomputes each message and compares it with the
+saved output, so no argmax array is stored.</p></li>
+<li><p>All arithmetic is done in float32. Inputs of other dtypes are converted, and
+the result is returned in the dtype of <code class="docutils literal notranslate"><span class="pre">x</span></code>.</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">mx.grad</span></code> / <code class="docutils literal notranslate"><span class="pre">mx.vjp</span></code> are supported for every reduction. <code class="docutils literal notranslate"><span class="pre">mx.jvp</span></code> is
+supported for <code class="docutils literal notranslate"><span class="pre">sum</span></code> and <code class="docutils literal notranslate"><span class="pre">mean</span></code>. Second-order gradients and <code class="docutils literal notranslate"><span class="pre">mx.vmap</span></code> are
+not supported.</p>
+</section>
+<section id="high-degree-nodes-load-balancing">
+<h2>High-degree nodes (load balancing)<a class="headerlink" href="#high-degree-nodes-load-balancing" title="Link to this heading">#</a></h2>
+<p>Real graphs often have a few nodes with a huge number of neighbours. A
+one-thread-per-node kernel would leave one thread looping over all of a hub's
+edges while the rest of the GPU sits idle. With <code class="docutils literal notranslate"><span class="pre">long_rows</span></code> (built by
+<code class="xref py py-func docutils literal notranslate"><span class="pre">coo_to_csr()</span></code>), nodes with more than <code class="docutils literal notranslate"><span class="pre">long_row_threshold</span></code>
+edges (default 256) are cut into chunks of up to <code class="docutils literal notranslate"><span class="pre">chunk_size</span></code> edges
+(default 2048). Each chunk is reduced by its own GPU threadgroup, then the
+chunk results are combined in a fixed order. This keeps results
+deterministic, and for sums it is also more accurate than one long running sum.</p>
+<p>On a 1M-edge power-law graph whose biggest node has 134k neighbours, this took
+the CSR forward pass from about 50 ms to about 1 ms.</p>
+<p>Building <code class="docutils literal notranslate"><span class="pre">long_rows</span></code> reads <code class="docutils literal notranslate"><span class="pre">rowptr</span></code> back to the host once per graph, so it
+cannot run inside <code class="docutils literal notranslate"><span class="pre">mx.compile</span></code>. Pass <code class="docutils literal notranslate"><span class="pre">long_row_threshold=None</span></code> to skip it.</p>
+</section>
+<section id="fast-backward-pass-transpose">
+<h2>Fast backward pass (transpose)<a class="headerlink" href="#fast-backward-pass-transpose" title="Link to this heading">#</a></h2>
+<p>The gradient of <code class="docutils literal notranslate"><span class="pre">sum</span></code>/<code class="docutils literal notranslate"><span class="pre">mean</span></code> with respect to <code class="docutils literal notranslate"><span class="pre">x</span></code> is <code class="docutils literal notranslate"><span class="pre">A^T</span> <span class="pre">&#64;</span> <span class="pre">grad</span></code>.
+<code class="xref py py-func docutils literal notranslate"><span class="pre">coo_to_csr()</span></code> also builds the transposed CSR
+(<code class="docutils literal notranslate"><span class="pre">csr.transpose</span></code>, edges grouped by source node, with its own <code class="docutils literal notranslate"><span class="pre">long_rows</span></code>).
+When it is passed to <code class="xref py py-func docutils literal notranslate"><span class="pre">spmm_csr()</span></code>, the backward pass runs on
+the CSR kernel too: no atomics, deterministic, and load-balanced for nodes
+with many outgoing edges. This holds for every reduction: for <code class="docutils literal notranslate"><span class="pre">max</span></code>/<code class="docutils literal notranslate"><span class="pre">min</span></code>
+each source node loops over its outgoing edges and adds the gradient of the
+edges that won (see <a class="reference internal" href="#reductions"><span class="std std-ref">Reductions</span></a>). Without <code class="docutils literal notranslate"><span class="pre">transpose</span></code> (and with
+<code class="xref py py-func docutils literal notranslate"><span class="pre">spmm_coo()</span></code>), the gradient w.r.t. <code class="docutils literal notranslate"><span class="pre">x</span></code> uses atomic adds
+instead, so it is correct but its last bits can vary between runs. <code class="docutils literal notranslate"><span class="pre">coo_to_csr(...,</span> <span class="pre">transpose=False)</span></code> saves the extra
+memory (about three index arrays) when only the forward pass is needed.</p>
+</section>
+<section id="using-it-from-mlx-graphs">
+<h2>Using it from mlx-graphs<a class="headerlink" href="#using-it-from-mlx-graphs" title="Link to this heading">#</a></h2>
+<p>mlx-graphs uses these kernels automatically for layers decorated with
+<code class="docutils literal notranslate"><span class="pre">&#64;fused_message_passing</span></code> (<code class="docutils literal notranslate"><span class="pre">GCNConv</span></code>, <code class="docutils literal notranslate"><span class="pre">SAGEConv</span></code>, <code class="docutils literal notranslate"><span class="pre">GINConv</span></code>,
+<code class="docutils literal notranslate"><span class="pre">SimpleConv</span></code>). It falls back to gather-scatter whenever the fused path does
+not apply. See the mlx-graphs documentation for details.</p>
+</section>
+<section id="limitations">
+<h2>Limitations<a class="headerlink" href="#limitations" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Messages must have the form <code class="docutils literal notranslate"><span class="pre">values[e]</span> <span class="pre">*</span> <span class="pre">x[col[e]]</span></code> with a scalar weight
+per edge. Attention layers (GAT) build messages from both endpoints and
+produce per-edge outputs, so they cannot use SpMM.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">softmax</span></code> aggregation produces one value per edge, so it is out of scope.</p></li>
+<li><p>Indices are processed as int64 and features as float32 inside the kernels.</p></li>
+</ul>
+</section>
+</section>
+
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="quickstart.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Quick Start</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="functions.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">API Reference</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal" tabindex="-1"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#why-use-it">Why use it</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#quick-example">Quick example</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#coo-or-csr">COO or CSR?</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#reductions">Reductions</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#high-degree-nodes-load-balancing">High-degree nodes (load balancing)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#fast-backward-pass-transpose">Fast backward pass (transpose)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#using-it-from-mlx-graphs">Using it from mlx-graphs</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#limitations">Limitations</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Vinay Pandya
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2025, Vinay Pandya.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>
