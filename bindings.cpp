@@ -1,7 +1,10 @@
+#include <optional>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/variant.h>
 #include <random_walks/RandomWalk.h>
 #include <random_walks/BiasedRandomWalk.h>
+#include <random_walks/MetaPathRandomWalk.h>
+#include <random_walks/rng.h>
 #include <nanobind/stl/vector.h>
 #include <random_walks/NeighborSample.h>
 #include <sampling/HeteroNeighborSample.h>
@@ -74,12 +77,28 @@ NB_MODULE(_ext, m){
           const mx::array& col,
           const mx::array& start,
           int walk_length,
-          float p,
-          float q,
-          nb::object stream = nb::none()
+          double p,
+          double q,
+          nb::object key,
+          int max_attempts,
+          nb::object stream
         ){
+          // Without an explicit key, draw one from Python's mx.random so
+          // mx.random.seed(...) makes walks reproducible (MLX's Python RNG
+          // state is separate from the C++ global key sequence). randint is
+          // float-based and only exact to 24 bits, so build the 64-bit key
+          // from four 16-bit draws.
+          mx::array k = key.is_none() ? mx::array(0u) : nb::cast<mx::array>(key);
+          if (key.is_none()) {
+            auto core = nb::module_::import_("mlx.core");
+            auto r = nb::cast<mx::array>(core.attr("random").attr("randint")(
+                0, 1 << 16, nb::make_tuple(4), core.attr("uint32")));
+            k = mx::bitwise_or(
+                mx::left_shift(mx::slice(r, {0}, {2}), mx::array(16u)),
+                mx::slice(r, {2}, {4}));
+          }
           auto outs = mlx_biased_random_walk::rejection_sampling(
-            rowptr, col, start, walk_length, p, q,
+            rowptr, col, start, walk_length, p, q, k, max_attempts,
             stream.is_none() ? mx::StreamOrDevice{}
                               : nb::cast<mx::StreamOrDevice>(stream));
           return nb::make_tuple(std::move(outs[0]), std::move(outs[1]));
@@ -90,25 +109,55 @@ NB_MODULE(_ext, m){
         "walk_length"_a,
         "p"_a,
         "q"_a,
-        nb::kw_only(), "stream"_a = nb::none(),
+        nb::kw_only(),
+        "key"_a = nb::none(),
+        "max_attempts"_a = 1000,
+        "stream"_a = nb::none(),
       R"(
-        Sample nodes from the graph by sampling neighbors based
-        on probablity p and q
+        node2vec biased random walks (rejection sampling).
+
+        Having moved ``t -> v``, the next node ``x`` is a neighbor of ``v``
+        chosen with weight ``1/p`` if ``x == t``, ``1`` if ``x`` is a
+        neighbor of ``t``, and ``1/q`` otherwise. A node without neighbors
+        keeps the walk in place (edge id ``-1``).
+
+        Random numbers are generated inside the kernel from a counter-based
+        generator seeded by ``key``, so the CPU and GPU produce identical
+        walks for the same key.
 
         Args:
-            rowptr (mlx.core.array): rowptr of graph in csr format.
-            col (mlx.core.array): edges in csr format.
-            start (mlx.core.array): starting node of graph from which 
-                            biased sampling will be performed.
-            walk_length (int) : walk length of random graph
-            p (float): Likelihood of immediately revisiting a node in the walk.
-            q (float): Control parameter to interpolate between
-                breadth-first strategy and depth-first strategy
+            rowptr (mlx.core.array): CSR row pointers (int64).
+            col (mlx.core.array): CSR column indices (int64).
+            start (mlx.core.array): Start nodes (int64).
+            walk_length (int): Number of steps per walk.
+            p (float): Return parameter; larger values make returning to
+                the previous node less likely.
+            q (float): In-out parameter; ``q > 1`` keeps walks local
+                (BFS-like), ``q < 1`` pushes them outward (DFS-like).
+            key (mlx.core.array, optional): uint32 key with 2 elements,
+                e.g. ``mx.random.key(0)``. If omitted, one is drawn from
+                MLX's global RNG, so ``mx.random.seed`` makes walks
+                reproducible.
+            max_attempts (int): Rejection-sampling cap per step. After this
+                many rejections the last candidate is accepted. Default 1000.
+            stream (mlx.core.Stream | mlx.core.Device, optional): Where to
+                run (``mx.cpu`` or ``mx.gpu``).
 
         Returns:
-            tuple (mlx.core.array, mlx.core.array)
+            tuple (mlx.core.array, mlx.core.array): ``(nodes, edges)`` of
+            shapes ``[len(start), walk_length + 1]`` and
+            ``[len(start), walk_length]``, both int64.
       )",
       nb::rv_policy::move);
+
+      m.def(
+        "_threefry2x32",
+        [](uint32_t k0, uint32_t k1, uint32_t c0, uint32_t c1) {
+          auto out = mlxc_threefry2x32(k0, k1, c0, c1);
+          return nb::make_tuple(out.x0, out.x1);
+        },
+        "k0"_a, "k1"_a, "c0"_a, "c1"_a,
+        "Internal: the counter-based RNG used by the walk kernels (for tests).");
 
       m.def(
         "neighbor_sample",
@@ -153,6 +202,38 @@ NB_MODULE(_ext, m){
         nb::rv_policy::move  // Add this return value policy
     );
   
+
+    m.def(
+        "_metapath_random_walk",
+        [](const mx::array& rowptr,
+           const mx::array& col,
+           const mx::array& rowptr_off,
+           const mx::array& col_off,
+           const mx::array& step_rel,
+           const mx::array& start,
+           const mx::array& rand,
+           int walk_length,
+           nb::object stream) {
+          auto outs = mlx_metapath_walk::metapath_random_walk(
+              rowptr, col, rowptr_off, col_off, step_rel, start, rand,
+              walk_length,
+              stream.is_none() ? mx::StreamOrDevice{}
+                               : nb::cast<mx::StreamOrDevice>(stream));
+          return nb::make_tuple(std::move(outs[0]), std::move(outs[1]));
+        },
+        "rowptr"_a, "col"_a, "rowptr_off"_a, "col_off"_a, "step_rel"_a,
+        "start"_a, "rand"_a, "walk_length"_a,
+        nb::kw_only(), "stream"_a = nb::none(),
+        R"(
+            Low-level meta-path random walk on concatenated per-relation
+            CSRs. Prefer :func:`mlx_cluster.metapath_random_walk`.
+
+            Returns:
+                tuple (mlx.core.array, mlx.core.array): (nodes, edges), with
+                -1 marking steps after a walk hit a dead end.
+        )",
+        nb::rv_policy::move);
+
     m.def(
         "hetero_neighbor_sample",
         [](const std::vector<std::string>& node_types,

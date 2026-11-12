@@ -16,6 +16,16 @@ Heterogeneous graphs
    :no-members:
    :exclude-members: __init__, __new__
 
+.. autofunction:: mlx_cluster.build_metapath_csr
+
+.. autofunction:: mlx_cluster.metapath_random_walk
+
+.. autofunction:: mlx_cluster.metapath_node_types
+
+.. autoclass:: mlx_cluster.MetaPathCSR
+   :no-members:
+   :exclude-members: __init__, __new__
+
 Sparse matrix multiplication
 ----------------------------
 

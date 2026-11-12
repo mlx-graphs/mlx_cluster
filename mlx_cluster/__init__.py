@@ -6,3 +6,4 @@ from ._ext import neighbor_sample
 from .hetero import HeteroSamplerOutput
 from .hetero import hetero_neighbor_sample
 from .sparse import CSR, CSRTranspose, LongRows, build_long_rows, coo_to_csr, sddmm, spmm_coo, spmm_csr
+from .metapath import MetaPathCSR, build_metapath_csr, metapath_node_types, metapath_random_walk
