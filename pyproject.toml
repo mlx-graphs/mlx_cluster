@@ -48,6 +48,7 @@ Issues = "https://github.com/mlx-graphs/mlx_cluster/issues"
 
 [tool.pytest.ini_options]
 addopts = "-ra"
+testpaths = ["tests"]
 markers = [
     "slow: marks tests that download data, compile kernels, or are otherwise time-consuming (deselect with -m 'not slow')",
 ]
@@ -59,4 +60,5 @@ requires = [
   "cmake>=3.24",
   "mlx>=0.32.0", 
 ]
+
 build-backend = "setuptools.build_meta"
