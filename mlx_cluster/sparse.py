@@ -262,7 +262,7 @@ def spmm_coo(
     n = x.shape[0] if num_rows is None else num_rows
     out = _spmm_coo(row, col, x, n, values, reduce=_kernel_reduce(reduce), stream=stream)
     if reduce == "mean":
-        deg = mx.zeros((n,), dtype=mx.float32).at[row].add(1.0)
+        deg = mx.zeros((n,), dtype=mx.int32).at[row].add(1).astype(mx.float32)
         out = out / mx.maximum(deg, 1.0)[:, None]
     return out.astype(x.dtype)
 
