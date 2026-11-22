@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="_static/documentation_options.js?v=17a4903e"></script>
+    <script src="_static/documentation_options.js?v=b3dc1427"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/scripts/sphinx-book-theme.js?v=efea14e4"></script>
@@ -396,6 +396,7 @@
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#reductions">Reductions</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#high-degree-nodes-load-balancing">High-degree nodes (load balancing)</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#fast-backward-pass-transpose">Fast backward pass (transpose)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#attention-scores-edge-scores">Attention scores (<code class="docutils literal notranslate"><span class="pre">edge_scores</span></code>)</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#using-it-from-mlx-graphs">Using it from mlx-graphs</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#limitations">Limitations</a></li>
 </ul>
@@ -579,20 +580,101 @@ edges that won (see <a class="reference internal" href="#reductions"><span class
 instead, so it is correct but its last bits can vary between runs. <code class="docutils literal notranslate"><span class="pre">coo_to_csr(...,</span> <span class="pre">transpose=False)</span></code> saves the extra
 memory (about three index arrays) when only the forward pass is needed.</p>
 </section>
+<section id="attention-scores-edge-scores">
+<h2>Attention scores (<code class="docutils literal notranslate"><span class="pre">edge_scores</span></code>)<a class="headerlink" href="#attention-scores-edge-scores" title="Link to this heading">#</a></h2>
+<p>Graph attention layers (<code class="docutils literal notranslate"><span class="pre">TransformerConv</span></code>, graph transformers) weigh each
+edge by a score computed from both of its endpoints, typically the dot product
+of the destination's query and the source's key:</p>
+<div class="math notranslate nohighlight">
+\[\text{out}[e, h] = \text{scale} \cdot
+\big\langle a[\text{row}[e], h, :],\; b[\text{col}[e], h, :] \big\rangle\]</div>
+<p>Gather-scatter computes this as <code class="docutils literal notranslate"><span class="pre">(a[row]</span> <span class="pre">*</span> <span class="pre">b[col]).sum(-1)</span></code>, which first
+copies one row of <code class="docutils literal notranslate"><span class="pre">a</span></code> and one of <code class="docutils literal notranslate"><span class="pre">b</span></code> <strong>per edge</strong> (two
+<code class="docutils literal notranslate"><span class="pre">[num_edges,</span> <span class="pre">heads,</span> <span class="pre">channels]</span></code> arrays) to produce only
+<code class="docutils literal notranslate"><span class="pre">[num_edges,</span> <span class="pre">heads]</span></code> scores. <code class="xref py py-func docutils literal notranslate"><span class="pre">edge_scores()</span></code> reads the two
+rows it needs for each edge and writes the score directly: one GPU SIMD group
+per (edge, head), all heads in one launch.</p>
+<p>It is differentiable with respect to <code class="docutils literal notranslate"><span class="pre">a</span></code> and <code class="docutils literal notranslate"><span class="pre">b</span></code>, and the backward pass
+avoids the per-edge arrays too: both gradients are SpMMs,</p>
+<div class="math notranslate nohighlight">
+\[\frac{\partial L}{\partial a[:, h]} =
+\text{scale} \cdot \mathrm{spmm}(\text{row}, \text{col}, b[:, h], g[:, h]),
+\qquad
+\frac{\partial L}{\partial b[:, h]} =
+\text{scale} \cdot \mathrm{spmm}(\text{col}, \text{row}, a[:, h], g[:, h])\]</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">g</span></code> is the incoming gradient of the scores.</p>
+<p>Together with SpMM this gives a whole attention layer without per-edge
+feature arrays: scores, a softmax over each node's incoming edges (on
+<code class="docutils literal notranslate"><span class="pre">[num_edges,</span> <span class="pre">heads]</span></code> only), then a weighted sum with one SpMM per head.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">mlx.core</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mx</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">mlx_cluster</span><span class="w"> </span><span class="kn">import</span> <span class="n">edge_scores</span><span class="p">,</span> <span class="n">spmm_coo</span>
+
+<span class="n">num_nodes</span><span class="p">,</span> <span class="n">heads</span><span class="p">,</span> <span class="n">channels</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">32</span>
+<span class="n">src</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_nodes</span><span class="p">,</span> <span class="p">(</span><span class="mi">20_000</span><span class="p">,))</span>
+<span class="n">dst</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_nodes</span><span class="p">,</span> <span class="p">(</span><span class="mi">20_000</span><span class="p">,))</span>
+<span class="n">q</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">((</span><span class="n">num_nodes</span><span class="p">,</span> <span class="n">heads</span><span class="p">,</span> <span class="n">channels</span><span class="p">))</span>  <span class="c1"># queries</span>
+<span class="n">k</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">((</span><span class="n">num_nodes</span><span class="p">,</span> <span class="n">heads</span><span class="p">,</span> <span class="n">channels</span><span class="p">))</span>  <span class="c1"># keys</span>
+<span class="n">v</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">((</span><span class="n">num_nodes</span><span class="p">,</span> <span class="n">heads</span><span class="p">,</span> <span class="n">channels</span><span class="p">))</span>  <span class="c1"># values</span>
+
+<span class="c1"># 1. one score per (edge, head): [num_edges, heads]</span>
+<span class="n">s</span> <span class="o">=</span> <span class="n">edge_scores</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mi">1</span> <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">channels</span><span class="p">))</span>
+
+<span class="c1"># 2. softmax over the incoming edges of each node</span>
+<span class="n">s_max</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">num_nodes</span><span class="p">,</span> <span class="n">heads</span><span class="p">))</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">dst</span><span class="p">]</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<span class="n">e</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">s</span> <span class="o">-</span> <span class="n">mx</span><span class="o">.</span><span class="n">stop_gradient</span><span class="p">(</span><span class="n">s_max</span><span class="p">)[</span><span class="n">dst</span><span class="p">])</span>
+<span class="n">alpha</span> <span class="o">=</span> <span class="n">e</span> <span class="o">/</span> <span class="n">mx</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">num_nodes</span><span class="p">,</span> <span class="n">heads</span><span class="p">))</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">dst</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">e</span><span class="p">)[</span><span class="n">dst</span><span class="p">]</span>
+
+<span class="c1"># 3. weighted sum of the values, one SpMM per head</span>
+<span class="n">out</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span>
+    <span class="p">[</span><span class="n">spmm_coo</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">v</span><span class="p">[:,</span> <span class="n">h</span><span class="p">],</span> <span class="n">alpha</span><span class="p">[:,</span> <span class="n">h</span><span class="p">],</span> <span class="n">num_rows</span><span class="o">=</span><span class="n">num_nodes</span><span class="p">)</span>
+     <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">heads</span><span class="p">)],</span>
+    <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+<span class="p">)</span>  <span class="c1"># [num_nodes, heads, channels]</span>
+</pre></div>
+</div>
+<p>Conventions:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">row</span></code> indexes <code class="docutils literal notranslate"><span class="pre">a</span></code> and <code class="docutils literal notranslate"><span class="pre">col</span></code> indexes <code class="docutils literal notranslate"><span class="pre">b</span></code>, and the two may have
+different numbers of rows (bipartite graphs). With mlx-graphs'
+<code class="docutils literal notranslate"><span class="pre">edge_index</span> <span class="pre">=</span> <span class="pre">[src,</span> <span class="pre">dst]</span></code>, queries are usually <code class="docutils literal notranslate"><span class="pre">a</span></code> (<code class="docutils literal notranslate"><span class="pre">row</span> <span class="pre">=</span> <span class="pre">dst</span></code>) and
+keys <code class="docutils literal notranslate"><span class="pre">b</span></code> (<code class="docutils literal notranslate"><span class="pre">col</span> <span class="pre">=</span> <span class="pre">src</span></code>).</p></li>
+<li><p>2-D inputs (<code class="docutils literal notranslate"><span class="pre">[num_nodes,</span> <span class="pre">channels]</span></code>) are treated as one head and give
+<code class="docutils literal notranslate"><span class="pre">[num_edges]</span></code> scores.</p></li>
+<li><p>Arithmetic is done in float32; the result has the dtype of <code class="docutils literal notranslate"><span class="pre">a</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mx.grad</span></code> / <code class="docutils literal notranslate"><span class="pre">mx.vjp</span></code> and <code class="docutils literal notranslate"><span class="pre">mx.compile</span></code> are supported; <code class="docutils literal notranslate"><span class="pre">mx.jvp</span></code>,
+<code class="docutils literal notranslate"><span class="pre">mx.vmap</span></code> and second-order gradients are not.</p></li>
+</ul>
+<p><code class="xref py py-func docutils literal notranslate"><span class="pre">sddmm()</span></code> computes the same single-head dot product but is not
+differentiable: it exists for the backward pass of SpMM. Use
+<code class="xref py py-func docutils literal notranslate"><span class="pre">edge_scores()</span></code> in models.</p>
+<p>Measured on an Apple M1 (8 GB), one <code class="docutils literal notranslate"><span class="pre">TransformerConv</span></code> layer from mlx-graphs
+(4 heads, 128 features, forward + backward): about <strong>3x less memory</strong> at every
+graph size (2.74 GB → 0.84 GB on 500k edges) and about <strong>2x faster</strong> on 500k
+edges, compared with gather-scatter.</p>
+</section>
 <section id="using-it-from-mlx-graphs">
 <h2>Using it from mlx-graphs<a class="headerlink" href="#using-it-from-mlx-graphs" title="Link to this heading">#</a></h2>
-<p>mlx-graphs uses these kernels automatically for layers decorated with
-<code class="docutils literal notranslate"><span class="pre">&#64;fused_message_passing</span></code> (<code class="docutils literal notranslate"><span class="pre">GCNConv</span></code>, <code class="docutils literal notranslate"><span class="pre">SAGEConv</span></code>, <code class="docutils literal notranslate"><span class="pre">GINConv</span></code>,
-<code class="docutils literal notranslate"><span class="pre">SimpleConv</span></code>). It falls back to gather-scatter whenever the fused path does
-not apply. See the mlx-graphs documentation for details.</p>
+<p>mlx-graphs uses these kernels automatically in layers decorated with
+<code class="docutils literal notranslate"><span class="pre">&#64;fused_message_passing</span></code>, for example <code class="docutils literal notranslate"><span class="pre">GCNConv</span></code>, <code class="docutils literal notranslate"><span class="pre">SAGEConv</span></code>,
+<code class="docutils literal notranslate"><span class="pre">GINConv</span></code>, <code class="docutils literal notranslate"><span class="pre">GATConv</span></code>, <code class="docutils literal notranslate"><span class="pre">GATv2Conv</span></code> and <code class="docutils literal notranslate"><span class="pre">TransformerConv</span></code> (which also
+computes its attention scores with <code class="xref py py-func docutils literal notranslate"><span class="pre">edge_scores()</span></code>). It falls
+back to gather-scatter whenever the fused path does not apply, or with an
+mlx-cluster that does not have these functions. See the mlx-graphs
+documentation for details.</p>
 </section>
 <section id="limitations">
 <h2>Limitations<a class="headerlink" href="#limitations" title="Link to this heading">#</a></h2>
 <ul class="simple">
-<li><p>Messages must have the form <code class="docutils literal notranslate"><span class="pre">values[e]</span> <span class="pre">*</span> <span class="pre">x[col[e]]</span></code> with a scalar weight
-per edge. Attention layers (GAT) build messages from both endpoints and
-produce per-edge outputs, so they cannot use SpMM.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">softmax</span></code> aggregation produces one value per edge, so it is out of scope.</p></li>
+<li><p>SpMM messages must have the form <code class="docutils literal notranslate"><span class="pre">values[e]</span> <span class="pre">*</span> <span class="pre">x[col[e]]</span></code>, with one scalar
+weight per edge (or per edge and head, one SpMM per head). Attention layers
+fit this form once their scores are computed (with
+<code class="xref py py-func docutils literal notranslate"><span class="pre">edge_scores()</span></code> for dot-product attention), but messages
+that add a per-edge feature (e.g. <code class="docutils literal notranslate"><span class="pre">TransformerConv</span></code> with edge features,
+<code class="docutils literal notranslate"><span class="pre">x[col[e]]</span> <span class="pre">+</span> <span class="pre">edge_attr[e]</span></code>) still need gather-scatter.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">softmax</span></code> itself produces one value per edge, so it is computed outside
+the kernels, on <code class="docutils literal notranslate"><span class="pre">[num_edges,</span> <span class="pre">heads]</span></code> arrays.</p></li>
 <li><p>Indices are processed as int64 and features as float32 inside the kernels.</p></li>
 </ul>
 </section>
@@ -650,6 +732,7 @@ produce per-edge outputs, so they cannot use SpMM.</p></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#reductions">Reductions</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#high-degree-nodes-load-balancing">High-degree nodes (load balancing)</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#fast-backward-pass-transpose">Fast backward pass (transpose)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#attention-scores-edge-scores">Attention scores (<code class="docutils literal notranslate"><span class="pre">edge_scores</span></code>)</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#using-it-from-mlx-graphs">Using it from mlx-graphs</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#limitations">Limitations</a></li>
 </ul>
