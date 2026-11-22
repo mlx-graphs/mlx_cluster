@@ -507,3 +507,39 @@ instantiate_kernel(
     out[e] = acc;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Edge scores: out[e, h] = scale * <a[row[e], h], b[col[e], h]>, with a and b
+// laid out [nodes, H, C]. Same scheme as sddmm with a head axis: one SIMD
+// group per (edge, head), lanes stride over C, then reduce with simd_sum.
+// The host dispatches a (32, E * H) grid with (32, 8) threadgroups.
+// ---------------------------------------------------------------------------
+[[kernel]] void edge_scores(
+    const device long* row [[buffer(0)]],
+    const device long* col [[buffer(1)]],
+    const device float* a [[buffer(2)]],
+    const device float* b [[buffer(3)]],
+    device float* out [[buffer(4)]],
+    constant uint& H [[buffer(5)]],
+    constant uint& C [[buffer(6)]],
+    constant uint& EH [[buffer(7)]],
+    constant float& scale [[buffer(8)]],
+    uint2 gid [[thread_position_in_grid]],
+    uint lane [[thread_index_in_simdgroup]]) {
+  const uint eh = gid.y;
+  if (eh >= EH) {
+    return;
+  }
+  const uint e = eh / H;
+  const uint h = eh - e * H;
+  const ulong ra = (static_cast<ulong>(row[e]) * H + h) * C;
+  const ulong cb = (static_cast<ulong>(col[e]) * H + h) * C;
+  float acc = 0.0f;
+  for (uint f = lane; f < C; f += 32) {
+    acc += a[ra + f] * b[cb + f];
+  }
+  acc = simd_sum(acc);
+  if (lane == 0) {
+    out[eh] = scale * acc;
+  }
+}

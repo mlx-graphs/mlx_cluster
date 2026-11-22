@@ -297,6 +297,66 @@ class SDDMM : public mx::Primitive {
   }
 };
 
+/**
+ * Multi-head per-edge dot product (the attention scores of graph
+ * transformers):
+ *
+ *   out[e, h] = scale * < a[row[e], h, :], b[col[e], h, :] >
+ *
+ * Inputs (in order):
+ *   0: row int64   [E]          (e.g. destination node: queries)
+ *   1: col int64   [E]          (e.g. source node: keys)
+ *   2: a   float32 [num_a, H, C]
+ *   3: b   float32 [num_b, H, C]
+ *
+ * Output: float32 [E, H]
+ *
+ * Unlike SDDMM (an internal piece of SpMM's backward) this op is
+ * differentiable w.r.t. a and b. Both gradients are SpMMs, one per head:
+ *   da[:, h] = scale * spmm_coo(row, col, b[:, h], g[:, h], num_a)
+ *   db[:, h] = scale * spmm_coo(col, row, a[:, h], g[:, h], num_b)
+ * so neither pass materialises an [E, H, C] array.
+ */
+class EdgeScores : public mx::Primitive {
+ public:
+  EdgeScores(mx::Stream stream, float scale)
+      : mx::Primitive(stream), scale_(scale) {}
+
+  void eval_cpu(
+      const std::vector<mx::array>& inputs,
+      std::vector<mx::array>& outputs) override;
+  void eval_gpu(
+      const std::vector<mx::array>& inputs,
+      std::vector<mx::array>& outputs) override;
+
+  std::vector<mx::array> jvp(
+      const std::vector<mx::array>& primals,
+      const std::vector<mx::array>& tangents,
+      const std::vector<int>& argnums) override;
+
+  std::vector<mx::array> vjp(
+      const std::vector<mx::array>& primals,
+      const std::vector<mx::array>& cotangents,
+      const std::vector<int>& argnums,
+      const std::vector<mx::array>& outputs) override;
+
+  std::pair<std::vector<mx::array>, std::vector<int>> vmap(
+      const std::vector<mx::array>& inputs,
+      const std::vector<int>& axes) override;
+
+  const char* name() const override {
+    return "EdgeScores";
+  }
+
+  bool is_equivalent(const mx::Primitive& other) const override {
+    auto* o = dynamic_cast<const EdgeScores*>(&other);
+    return o != nullptr && o->scale_ == scale_;
+  }
+
+ private:
+  float scale_;
+};
+
 /** out[row[e]] (+|max|min)= value[e] * x[col[e]]   (COO). */
 mx::array spmm_coo(
     const mx::array& row,
@@ -385,6 +445,18 @@ mx::array sddmm(
     const mx::array& col,
     const mx::array& a,
     const mx::array& b,
+    mx::StreamOrDevice s = {});
+
+/**
+ * out[e, h] = scale * <a[row[e], h], b[col[e], h]>  (see EdgeScores).
+ * a: [num_a, H, C], b: [num_b, H, C] -> [E, H]. Differentiable w.r.t. a, b.
+ */
+mx::array edge_scores(
+    const mx::array& row,
+    const mx::array& col,
+    const mx::array& a,
+    const mx::array& b,
+    float scale = 1.0f,
     mx::StreamOrDevice s = {});
 
 /** Expand a CSR rowptr [N+1] into a per-edge row array [E] (int64). */

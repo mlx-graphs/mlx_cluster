@@ -392,4 +392,24 @@ NB_MODULE(_ext, m){
             Returns:
                 mlx.core.array: float32 array of shape ``[num_edges]``.
         )");
+
+    m.def(
+        "_edge_scores",
+        [](const mx::array& row,
+           const mx::array& col,
+           const mx::array& a,
+           const mx::array& b,
+           float scale,
+           nb::object stream) {
+          return mlx_sparse::edge_scores(
+              row, col, a, b, scale,
+              stream.is_none() ? mx::StreamOrDevice{}
+                               : nb::cast<mx::StreamOrDevice>(stream));
+        },
+        "row"_a, "col"_a, "a"_a, "b"_a,
+        nb::kw_only(), "scale"_a = 1.0f, "stream"_a = nb::none(),
+        R"(
+            Low-level multi-head edge scores. Prefer
+            :func:`mlx_cluster.edge_scores`.
+        )");
 }

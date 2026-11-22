@@ -22,7 +22,7 @@ from typing import Literal, NamedTuple, Optional
 import mlx.core as mx
 import numpy as np
 
-from ._ext import _spmm_coo, _spmm_csr, sddmm
+from ._ext import _edge_scores, _spmm_coo, _spmm_csr, sddmm
 
 SpMMReduce = Literal["sum", "add", "mean", "max", "min"]
 
@@ -31,6 +31,7 @@ __all__ = [
     "CSRTranspose",
     "LongRows",
     "coo_to_csr",
+    "edge_scores",
     "sddmm",
     "spmm_coo",
     "spmm_csr",
@@ -331,3 +332,51 @@ def spmm_csr(
         deg = (rowptr[1:] - rowptr[:-1]).astype(mx.float32)
         out = out / mx.maximum(deg, 1.0)[:, None]
     return out.astype(x.dtype)
+
+
+def edge_scores(
+    row: mx.array,
+    col: mx.array,
+    a: mx.array,
+    b: mx.array,
+    scale: float = 1.0,
+    *,
+    stream=None,
+) -> mx.array:
+    """Multi-head dot product per edge, the attention scores of graph
+    transformers (e.g. ``TransformerConv``).
+
+    ``out[e, h] = scale * <a[row[e], h], b[col[e], h]>``
+
+    Equivalent to ``scale * (a[row] * b[col]).sum(-1)`` without materialising
+    the two ``[num_edges, heads, channels]`` gathers. Differentiable w.r.t.
+    ``a`` and ``b``: both gradients are computed with the SpMM kernels.
+
+    GPU kernel: one SIMD group per (edge, head), all heads in one launch.
+
+    Args:
+        row: ``[num_edges]`` index into ``a`` (e.g. the destination node,
+            whose queries are in ``a``).
+        col: ``[num_edges]`` index into ``b`` (e.g. the source node, whose
+            keys are in ``b``).
+        a: ``[num_a, heads, channels]``, or ``[num_a, channels]`` for one head.
+        b: ``[num_b, heads, channels]``, or ``[num_b, channels]`` for one head.
+            ``num_a`` and ``num_b`` may differ (bipartite graphs).
+        scale: factor applied to every score, e.g. ``1 / sqrt(channels)``.
+
+    Returns:
+        ``[num_edges, heads]`` (``[num_edges]`` for 2-D inputs), with the
+        dtype of ``a``.
+    """
+    if a.ndim != b.ndim or a.ndim not in (2, 3):
+        raise ValueError(
+            "a and b must both be [num_nodes, heads, channels] or both "
+            f"[num_nodes, channels], got shapes {a.shape} and {b.shape}."
+        )
+    single_head = a.ndim == 2
+    if single_head:
+        a, b = a[:, None, :], b[:, None, :]
+    out = _edge_scores(row, col, a, b, scale=float(scale), stream=stream)
+    if single_head:
+        out = out[:, 0]
+    return out.astype(a.dtype)

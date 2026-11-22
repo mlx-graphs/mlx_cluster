@@ -1179,6 +1179,181 @@ mx::array sddmm(
       {as_index(row, s), as_index(col, s), as_float(a, s), as_float(b, s)});
 }
 
+// ---------------------------------------------------------------------------
+// EdgeScores
+// ---------------------------------------------------------------------------
+
+void EdgeScores::eval_cpu(
+    const std::vector<mx::array>& inputs,
+    std::vector<mx::array>& outputs) {
+  auto& out = outputs[0];
+  out.set_data(mx::allocator::malloc(out.nbytes()));
+
+  auto& enc = mx::cpu::get_command_encoder(stream());
+  for (auto& in : inputs) {
+    enc.set_input_array(in);
+  }
+  enc.set_output_array(out);
+
+  const int64_t E = inputs[0].size();
+  const int64_t H = inputs[2].shape(1);
+  const int64_t C = inputs[2].shape(2);
+
+  enc.dispatch([row = inputs[0],
+                col = inputs[1],
+                a = inputs[2],
+                b = inputs[3],
+                out_ptr = out.data<float>(),
+                E,
+                H,
+                C,
+                scale = scale_]() {
+    const int64_t* r = row.data<int64_t>();
+    const int64_t* c = col.data<int64_t>();
+    const float* ap = a.data<float>();
+    const float* bp = b.data<float>();
+    for (int64_t e = 0; e < E; ++e) {
+      for (int64_t h = 0; h < H; ++h) {
+        const float* ar = ap + (r[e] * H + h) * C;
+        const float* br = bp + (c[e] * H + h) * C;
+        float acc = 0.0f;
+        for (int64_t f = 0; f < C; ++f) {
+          acc += ar[f] * br[f];
+        }
+        out_ptr[e * H + h] = scale * acc;
+      }
+    }
+  });
+}
+
+#ifdef _METAL_
+void EdgeScores::eval_gpu(
+    const std::vector<mx::array>& inputs,
+    std::vector<mx::array>& outputs) {
+  auto& out = outputs[0];
+  out.set_data(mx::allocator::malloc(out.nbytes()));
+  if (out.size() == 0) {
+    return;
+  }
+  const uint32_t E = static_cast<uint32_t>(inputs[0].size());
+  const uint32_t H = static_cast<uint32_t>(inputs[2].shape(1));
+  const uint32_t C = static_cast<uint32_t>(inputs[2].shape(2));
+  const uint32_t EH = E * H;
+  const float scale = scale_;
+
+  auto& s = stream();
+  auto& d = mx::metal::device(s.device);
+  auto lib = d.get_library("mlx_cluster", binary_dir());
+  auto k = d.get_kernel("edge_scores", lib);
+  auto& enc = mx::metal::get_command_encoder(s);
+  enc.set_compute_pipeline_state(k);
+  enc.set_input_array(inputs[0], 0);
+  enc.set_input_array(inputs[1], 1);
+  enc.set_input_array(inputs[2], 2);
+  enc.set_input_array(inputs[3], 3);
+  enc.set_output_array(out, 4);
+  enc.set_bytes(H, 5);
+  enc.set_bytes(C, 6);
+  enc.set_bytes(EH, 7);
+  enc.set_bytes(scale, 8);
+  // one SIMD group (32 lanes) per (edge, head), 8 of them per threadgroup
+  enc.dispatch_threads(MTL::Size(32, EH, 1), MTL::Size(32, 8, 1));
+}
+#else
+void EdgeScores::eval_gpu(
+    const std::vector<mx::array>&,
+    std::vector<mx::array>&) {
+  throw std::runtime_error("[edge_scores] This build has no Metal backend.");
+}
+#endif
+
+std::vector<mx::array> EdgeScores::jvp(
+    const std::vector<mx::array>&,
+    const std::vector<mx::array>&,
+    const std::vector<int>&) {
+  throw std::runtime_error("[edge_scores] jvp is not supported.");
+}
+
+std::vector<mx::array> EdgeScores::vjp(
+    const std::vector<mx::array>& primals,
+    const std::vector<mx::array>& cotangents,
+    const std::vector<int>& argnums,
+    const std::vector<mx::array>&) {
+  const auto& row = primals[0];
+  const auto& col = primals[1];
+  const auto& a = primals[2]; // [num_a, H, C]
+  const auto& b = primals[3]; // [num_b, H, C]
+  const auto& g = cotangents[0]; // [E, H]
+  const int H = a.shape(1);
+  auto s = stream();
+
+  // d/da[r, h] = scale * sum_{e: row[e] = r} g[e, h] * b[col[e], h]
+  //            = scale * spmm_coo(row, col, b[:, h], g[:, h], num_a)
+  // and symmetrically for b on the reversed edges.
+  auto grad_of = [&](const mx::array& other,
+                     const mx::array& out_idx,
+                     const mx::array& in_idx,
+                     int num_out) {
+    std::vector<mx::array> heads;
+    heads.reserve(H);
+    const int num_in = other.shape(0);
+    const int C = other.shape(2);
+    const int E = g.shape(0);
+    for (int h = 0; h < H; ++h) {
+      // slices rather than take(): take rejects arrays with no edges
+      auto x_h = mx::reshape(
+          mx::slice(other, {0, h, 0}, {num_in, h + 1, C}, s), {num_in, C}, s);
+      auto g_h = mx::reshape(mx::slice(g, {0, h}, {E, h + 1}, s), {E}, s);
+      heads.push_back(spmm_coo(out_idx, in_idx, x_h, g_h, num_out, SpMMReduce::Sum, s));
+    }
+    auto grad = H == 1 ? mx::expand_dims(heads[0], 1, s) : mx::stack(heads, 1, s);
+    if (scale_ != 1.0f) {
+      grad = mx::multiply(grad, mx::array(scale_, mx::float32), s);
+    }
+    return grad;
+  };
+
+  std::vector<mx::array> grads;
+  for (int arg : argnums) {
+    if (arg == 2) {
+      grads.push_back(grad_of(b, row, col, a.shape(0)));
+    } else if (arg == 3) {
+      grads.push_back(grad_of(a, col, row, b.shape(0)));
+    } else {
+      grads.push_back(mx::zeros_like(primals[arg], s));
+    }
+  }
+  return grads;
+}
+
+std::pair<std::vector<mx::array>, std::vector<int>> EdgeScores::vmap(
+    const std::vector<mx::array>&,
+    const std::vector<int>&) {
+  throw std::runtime_error("[edge_scores] vmap is not supported.");
+}
+
+mx::array edge_scores(
+    const mx::array& row,
+    const mx::array& col,
+    const mx::array& a,
+    const mx::array& b,
+    float scale,
+    mx::StreamOrDevice s) {
+  check(row.ndim() == 1 && col.ndim() == 1, "row and col must be 1-D.");
+  check(row.size() == col.size(), "row and col must have the same length.");
+  check(
+      a.ndim() == 3 && b.ndim() == 3,
+      "a and b must be 3-D [num_nodes, heads, channels].");
+  check(
+      a.shape(1) == b.shape(1) && a.shape(2) == b.shape(2),
+      "a and b must have the same number of heads and channels.");
+  return mx::array(
+      {static_cast<int>(row.size()), a.shape(1)},
+      mx::float32,
+      std::make_shared<EdgeScores>(mx::to_stream(s), scale),
+      {as_index(row, s), as_index(col, s), as_float(a, s), as_float(b, s)});
+}
+
 mx::array csr_to_row(
     const mx::array& rowptr,
     int64_t num_edges,
