@@ -18,6 +18,7 @@ High-performance graph algorithms optimized for Apple's MLX framework, featuring
   - Biased random walks (Node2Vec style with p/q parameters)
   - Multi-hop neighbor sampling (GraphSAGE style)
   - Sparse × dense matrix multiplication (SpMM) for message passing: `sum`, `mean`, `max`, `min`, with gradients (COO and CSR, Metal kernels)
+  - Multi-head attention scores per edge (`edge_scores`) for graph attention / transformer layers, with gradients
 
 ## Installation
 
@@ -169,6 +170,18 @@ about 4x faster and uses about 4.6x less memory than gather-scatter. mlx-graphs
 uses these kernels automatically via `@fused_message_passing`. See the
 [SpMM guide](https://vinayhpandya.github.io/mlx_cluster/sparse.html) for
 conventions (empty rows, ties) and details.
+
+For attention layers, `edge_scores` computes one dot-product score per edge
+and head (e.g. query · key) without copying the node features per edge,
+forward or backward:
+
+```python
+from mlx_cluster import edge_scores
+
+q = mx.random.normal((3, 4, 16))   # [num_nodes, heads, channels]
+k = mx.random.normal((3, 4, 16))
+scores = edge_scores(dst, src, q, k, scale=0.25)   # [num_edges, heads]
+```
 
 ## Documentation
 

@@ -39,6 +39,8 @@ See :doc:`sparse` for an overview, conventions and performance notes.
 
 .. autofunction:: mlx_cluster.sddmm
 
+.. autofunction:: mlx_cluster.edge_scores
+
 .. autofunction:: mlx_cluster.build_long_rows
 
 .. autoclass:: mlx_cluster.CSR

@@ -160,19 +160,112 @@ edges that won (see :ref:`reductions`). Without ``transpose`` (and with
 instead, so it is correct but its last bits can vary between runs. ``coo_to_csr(..., transpose=False)`` saves the extra
 memory (about three index arrays) when only the forward pass is needed.
 
+Attention scores (``edge_scores``)
+----------------------------------
+
+Graph attention layers (``TransformerConv``, graph transformers) weigh each
+edge by a score computed from both of its endpoints, typically the dot product
+of the destination's query and the source's key:
+
+.. math::
+
+   \text{out}[e, h] = \text{scale} \cdot
+   \big\langle a[\text{row}[e], h, :],\; b[\text{col}[e], h, :] \big\rangle
+
+Gather-scatter computes this as ``(a[row] * b[col]).sum(-1)``, which first
+copies one row of ``a`` and one of ``b`` **per edge** (two
+``[num_edges, heads, channels]`` arrays) to produce only
+``[num_edges, heads]`` scores. :func:`~mlx_cluster.edge_scores` reads the two
+rows it needs for each edge and writes the score directly: one GPU SIMD group
+per (edge, head), all heads in one launch.
+
+It is differentiable with respect to ``a`` and ``b``, and the backward pass
+avoids the per-edge arrays too: both gradients are SpMMs,
+
+.. math::
+
+   \frac{\partial L}{\partial a[:, h]} =
+   \text{scale} \cdot \mathrm{spmm}(\text{row}, \text{col}, b[:, h], g[:, h]),
+   \qquad
+   \frac{\partial L}{\partial b[:, h]} =
+   \text{scale} \cdot \mathrm{spmm}(\text{col}, \text{row}, a[:, h], g[:, h])
+
+where ``g`` is the incoming gradient of the scores.
+
+Together with SpMM this gives a whole attention layer without per-edge
+feature arrays: scores, a softmax over each node's incoming edges (on
+``[num_edges, heads]`` only), then a weighted sum with one SpMM per head.
+
+.. code-block:: python
+
+   import math
+
+   import mlx.core as mx
+   from mlx_cluster import edge_scores, spmm_coo
+
+   num_nodes, heads, channels = 1000, 4, 32
+   src = mx.random.randint(0, num_nodes, (20_000,))
+   dst = mx.random.randint(0, num_nodes, (20_000,))
+   q = mx.random.normal((num_nodes, heads, channels))  # queries
+   k = mx.random.normal((num_nodes, heads, channels))  # keys
+   v = mx.random.normal((num_nodes, heads, channels))  # values
+
+   # 1. one score per (edge, head): [num_edges, heads]
+   s = edge_scores(dst, src, q, k, scale=1 / math.sqrt(channels))
+
+   # 2. softmax over the incoming edges of each node
+   s_max = mx.zeros((num_nodes, heads)).at[dst].maximum(s)
+   e = mx.exp(s - mx.stop_gradient(s_max)[dst])
+   alpha = e / mx.zeros((num_nodes, heads)).at[dst].add(e)[dst]
+
+   # 3. weighted sum of the values, one SpMM per head
+   out = mx.stack(
+       [spmm_coo(dst, src, v[:, h], alpha[:, h], num_rows=num_nodes)
+        for h in range(heads)],
+       axis=1,
+   )  # [num_nodes, heads, channels]
+
+Conventions:
+
+* ``row`` indexes ``a`` and ``col`` indexes ``b``, and the two may have
+  different numbers of rows (bipartite graphs). With mlx-graphs'
+  ``edge_index = [src, dst]``, queries are usually ``a`` (``row = dst``) and
+  keys ``b`` (``col = src``).
+* 2-D inputs (``[num_nodes, channels]``) are treated as one head and give
+  ``[num_edges]`` scores.
+* Arithmetic is done in float32; the result has the dtype of ``a``.
+* ``mx.grad`` / ``mx.vjp`` and ``mx.compile`` are supported; ``mx.jvp``,
+  ``mx.vmap`` and second-order gradients are not.
+
+:func:`~mlx_cluster.sddmm` computes the same single-head dot product but is not
+differentiable: it exists for the backward pass of SpMM. Use
+:func:`~mlx_cluster.edge_scores` in models.
+
+Measured on an Apple M1 (8 GB), one ``TransformerConv`` layer from mlx-graphs
+(4 heads, 128 features, forward + backward): about **3x less memory** at every
+graph size (2.74 GB → 0.84 GB on 500k edges) and about **2x faster** on 500k
+edges, compared with gather-scatter.
+
 Using it from mlx-graphs
 ------------------------
 
-mlx-graphs uses these kernels automatically for layers decorated with
-``@fused_message_passing`` (``GCNConv``, ``SAGEConv``, ``GINConv``,
-``SimpleConv``). It falls back to gather-scatter whenever the fused path does
-not apply. See the mlx-graphs documentation for details.
+mlx-graphs uses these kernels automatically in layers decorated with
+``@fused_message_passing``, for example ``GCNConv``, ``SAGEConv``,
+``GINConv``, ``GATConv``, ``GATv2Conv`` and ``TransformerConv`` (which also
+computes its attention scores with :func:`~mlx_cluster.edge_scores`). It falls
+back to gather-scatter whenever the fused path does not apply, or with an
+mlx-cluster that does not have these functions. See the mlx-graphs
+documentation for details.
 
 Limitations
 -----------
 
-* Messages must have the form ``values[e] * x[col[e]]`` with a scalar weight
-  per edge. Attention layers (GAT) build messages from both endpoints and
-  produce per-edge outputs, so they cannot use SpMM.
-* ``softmax`` aggregation produces one value per edge, so it is out of scope.
+* SpMM messages must have the form ``values[e] * x[col[e]]``, with one scalar
+  weight per edge (or per edge and head, one SpMM per head). Attention layers
+  fit this form once their scores are computed (with
+  :func:`~mlx_cluster.edge_scores` for dot-product attention), but messages
+  that add a per-edge feature (e.g. ``TransformerConv`` with edge features,
+  ``x[col[e]] + edge_attr[e]``) still need gather-scatter.
+* ``softmax`` itself produces one value per edge, so it is computed outside
+  the kernels, on ``[num_edges, heads]`` arrays.
 * Indices are processed as int64 and features as float32 inside the kernels.
