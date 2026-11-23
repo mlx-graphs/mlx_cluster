@@ -27,6 +27,7 @@ jobs:
       - name: Build sphinx
         run: cd docs && make html
       - name: Deploy
-        uses: peaceiris/actions-gh-pages@v4   # unchanged        with:
+        uses: peaceiris/actions-gh-pages@v4   # unchanged        
+        with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: docs/build/html
