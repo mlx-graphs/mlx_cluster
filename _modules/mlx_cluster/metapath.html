@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+
+
+<html lang="Python" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>mlx_cluster.metapath &#8212; mlx-cluster documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/sphinx-book-theme.css?v=384b581d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=61a4c737" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../_static/scripts/fontawesome.js?digest=75c7c72ae941e8b558d8"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
+
+    <script src="../../_static/documentation_options.js?v=785584ea"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/scripts/sphinx-book-theme.js?v=efea14e4"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/mlx_cluster/metapath';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="Python"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../../_static/searchtools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal" tabindex="-1"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">MLX-Cluster</p>
+  
+</a></div>
+        <div class="sidebar-primary-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/vinayhpandya/mlx_cluster" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        <div class="sidebar-primary-item">
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Installation and Quickstart</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Quick Start</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Guides</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../sparse.html">Sparse Matrix Multiplication (SpMM)</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Functions and APIs</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../functions.html">API Reference</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><label class="sidebar-toggle primary-toggle btn btn-sm" for="__primary" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</label></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-source-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Source repositories">
+    <i class="fab fa-github"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://github.com/vinayhpandya/mlx_cluster" target="_blank"
+   class="btn btn-sm btn-source-repository-button dropdown-item"
+   title="Source repository"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+<span class="btn__text-container">Repository</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/vinayhpandya/mlx_cluster/issues/new?title=Issue%20on%20page%20%2F_modules/mlx_cluster/metapath.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button dropdown-item"
+   title="Open an issue"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="btn__text-container">Open issue</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
+  </ul>
+</div>
+
+
+<button type="button" class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button>
+
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1></h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for mlx_cluster.metapath</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Meta-path guided random walks on heterogeneous graphs (metapath2vec).</span>
+
+<span class="sd">Usage is two steps: build the per-relation CSR once with</span>
+<span class="sd">:func:`build_metapath_csr`, then call :func:`metapath_random_walk` as many</span>
+<span class="sd">times as needed (e.g. once per training batch).</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">NamedTuple</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">mlx.core</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mx</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">._ext</span><span class="w"> </span><span class="kn">import</span> <span class="n">_metapath_random_walk</span>
+
+<span class="n">NodeType</span> <span class="o">=</span> <span class="nb">str</span>
+<span class="n">EdgeType</span> <span class="o">=</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"MetaPathCSR"</span><span class="p">,</span>
+    <span class="s2">"build_metapath_csr"</span><span class="p">,</span>
+    <span class="s2">"metapath_random_walk"</span><span class="p">,</span>
+    <span class="s2">"metapath_node_types"</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+<div class="viewcode-block" id="MetaPathCSR">
+<a class="viewcode-back" href="../../functions.html#mlx_cluster.MetaPathCSR">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MetaPathCSR</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Per-relation CSR adjacency for the relations of a meta-path.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        metapath: The meta-path, a list of ``(src, rel, dst)`` edge types.</span>
+<span class="sd">        rowptr: All relations' CSR row pointers, concatenated (int64).</span>
+<span class="sd">        col: All relations' CSR column indices, concatenated (int64).</span>
+<span class="sd">        rowptr_offset: Start of each relation inside ``rowptr`` (int64).</span>
+<span class="sd">        col_offset: Start of each relation inside ``col`` (int64).</span>
+<span class="sd">        rel_ids: For each meta-path position, the relation id it uses.</span>
+<span class="sd">        num_nodes_dict: Number of nodes per node type.</span>
+<span class="sd">    """</span>
+
+    <span class="n">metapath</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">EdgeType</span><span class="p">]</span>
+    <span class="n">rowptr</span><span class="p">:</span> <span class="n">mx</span><span class="o">.</span><span class="n">array</span>
+    <span class="n">col</span><span class="p">:</span> <span class="n">mx</span><span class="o">.</span><span class="n">array</span>
+    <span class="n">rowptr_offset</span><span class="p">:</span> <span class="n">mx</span><span class="o">.</span><span class="n">array</span>
+    <span class="n">col_offset</span><span class="p">:</span> <span class="n">mx</span><span class="o">.</span><span class="n">array</span>
+    <span class="n">rel_ids</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
+    <span class="n">num_nodes_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">NodeType</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_validate_metapath</span><span class="p">(</span><span class="n">metapath</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">EdgeType</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">EdgeType</span><span class="p">]:</span>
+    <span class="n">metapath</span> <span class="o">=</span> <span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">et</span><span class="p">)</span> <span class="k">for</span> <span class="n">et</span> <span class="ow">in</span> <span class="n">metapath</span><span class="p">]</span>  <span class="c1"># type: ignore[misc]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">metapath</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"metapath must contain at least one edge type"</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">et</span> <span class="ow">in</span> <span class="n">metapath</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">et</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">et</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Edge types must be (src, rel, dst) str tuples: </span><span class="si">{</span><span class="n">et</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">metapath</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">metapath</span><span class="p">[</span><span class="mi">1</span><span class="p">:]):</span>
+        <span class="k">if</span> <span class="n">a</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">!=</span> <span class="n">b</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Invalid metapath: </span><span class="si">{</span><span class="n">a</span><span class="si">!r}</span><span class="s2"> ends at '</span><span class="si">{</span><span class="n">a</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s2">' but </span><span class="si">{</span><span class="n">b</span><span class="si">!r}</span><span class="s2"> "</span>
+                <span class="sa">f</span><span class="s2">"starts at '</span><span class="si">{</span><span class="n">b</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">'"</span>
+            <span class="p">)</span>
+    <span class="k">return</span> <span class="n">metapath</span>  <span class="c1"># type: ignore[return-value]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_infer_num_nodes</span><span class="p">(</span>
+    <span class="n">edge_index_dict</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="n">EdgeType</span><span class="p">,</span> <span class="n">mx</span><span class="o">.</span><span class="n">array</span><span class="p">],</span>
+    <span class="n">num_nodes_dict</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="n">NodeType</span><span class="p">,</span> <span class="nb">int</span><span class="p">]],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="n">NodeType</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+    <span class="n">out</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">NodeType</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">num_nodes_dict</span> <span class="ow">or</span> <span class="p">{})</span>
+    <span class="n">inferred</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">NodeType</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">dst</span><span class="p">),</span> <span class="n">ei</span> <span class="ow">in</span> <span class="n">edge_index_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">ei</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">ei_np</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ei</span><span class="p">)</span>
+        <span class="n">inferred</span><span class="p">[</span><span class="n">src</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">inferred</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">ei_np</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">())</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">inferred</span><span class="p">[</span><span class="n">dst</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">inferred</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">ei_np</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">())</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">nt</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">inferred</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">nt</span> <span class="ow">in</span> <span class="n">out</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">out</span><span class="p">[</span><span class="n">nt</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"num_nodes_dict['</span><span class="si">{</span><span class="n">nt</span><span class="si">}</span><span class="s2">'] = </span><span class="si">{</span><span class="n">out</span><span class="p">[</span><span class="n">nt</span><span class="p">]</span><span class="si">}</span><span class="s2"> but edges reference "</span>
+                    <span class="sa">f</span><span class="s2">"node id </span><span class="si">{</span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">"</span>
+                <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">out</span><span class="p">[</span><span class="n">nt</span><span class="p">]</span> <span class="o">=</span> <span class="n">n</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+
+<div class="viewcode-block" id="build_metapath_csr">
+<a class="viewcode-back" href="../../functions.html#mlx_cluster.build_metapath_csr">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_metapath_csr</span><span class="p">(</span>
+    <span class="n">edge_index_dict</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="n">EdgeType</span><span class="p">,</span> <span class="n">mx</span><span class="o">.</span><span class="n">array</span><span class="p">],</span>
+    <span class="n">metapath</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">EdgeType</span><span class="p">],</span>
+    <span class="n">num_nodes_dict</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="n">NodeType</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MetaPathCSR</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Builds the CSR adjacency used by :func:`metapath_random_walk`.</span>
+
+<span class="sd">    This sorts every relation once, so compute it once per graph and reuse it.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        edge_index_dict: ``(src, rel, dst) -&gt; [2, num_edges]`` edge indices,</span>
+<span class="sd">            with node ids local to each node type (as in ``HeteroGraphData``).</span>
+<span class="sd">        metapath: List of ``(src, rel, dst)`` edge types. Each edge type must</span>
+<span class="sd">            end at the node type the next one starts from.</span>
+<span class="sd">        num_nodes_dict: Optional number of nodes per node type. Missing types</span>
+<span class="sd">            are inferred from the largest node id in ``edge_index_dict``.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        MetaPathCSR</span>
+<span class="sd">    """</span>
+    <span class="n">metapath</span> <span class="o">=</span> <span class="n">_validate_metapath</span><span class="p">(</span><span class="n">metapath</span><span class="p">)</span>
+    <span class="n">missing</span> <span class="o">=</span> <span class="p">[</span><span class="n">et</span> <span class="k">for</span> <span class="n">et</span> <span class="ow">in</span> <span class="n">metapath</span> <span class="k">if</span> <span class="n">et</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">edge_index_dict</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Edge types </span><span class="si">{</span><span class="n">missing</span><span class="si">}</span><span class="s2"> are not in edge_index_dict"</span><span class="p">)</span>
+
+    <span class="n">num_nodes</span> <span class="o">=</span> <span class="n">_infer_num_nodes</span><span class="p">(</span><span class="n">edge_index_dict</span><span class="p">,</span> <span class="n">num_nodes_dict</span><span class="p">)</span>
+
+    <span class="n">unique_rels</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">EdgeType</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">et</span> <span class="ow">in</span> <span class="n">metapath</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">et</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">unique_rels</span><span class="p">:</span>
+            <span class="n">unique_rels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">et</span><span class="p">)</span>
+
+    <span class="n">rowptrs</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">rp_off</span><span class="p">,</span> <span class="n">col_off</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]</span>
+    <span class="n">rp_cursor</span><span class="p">,</span> <span class="n">col_cursor</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">et</span> <span class="ow">in</span> <span class="n">unique_rels</span><span class="p">:</span>
+        <span class="n">src_type</span> <span class="o">=</span> <span class="n">et</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">n_src</span> <span class="o">=</span> <span class="n">num_nodes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">src_type</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">ei</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">edge_index_dict</span><span class="p">[</span><span class="n">et</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+        <span class="n">src</span><span class="p">,</span> <span class="n">dst</span> <span class="o">=</span> <span class="n">ei</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ei</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"stable"</span><span class="p">)</span>
+        <span class="n">counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">minlength</span><span class="o">=</span><span class="n">n_src</span><span class="p">)</span>
+        <span class="n">rowptr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="mi">0</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">counts</span><span class="p">)])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+        <span class="n">rowptrs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rowptr</span><span class="p">)</span>
+        <span class="n">cols</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dst</span><span class="p">[</span><span class="n">order</span><span class="p">])</span>
+        <span class="n">rp_off</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rp_cursor</span><span class="p">)</span>
+        <span class="n">col_off</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">col_cursor</span><span class="p">)</span>
+        <span class="n">rp_cursor</span> <span class="o">+=</span> <span class="n">rowptr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">col_cursor</span> <span class="o">+=</span> <span class="n">dst</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">MetaPathCSR</span><span class="p">(</span>
+        <span class="n">metapath</span><span class="o">=</span><span class="n">metapath</span><span class="p">,</span>
+        <span class="n">rowptr</span><span class="o">=</span><span class="n">mx</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">rowptrs</span><span class="p">)),</span>
+        <span class="n">col</span><span class="o">=</span><span class="n">mx</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">cols</span><span class="p">)),</span>
+        <span class="n">rowptr_offset</span><span class="o">=</span><span class="n">mx</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">rp_off</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)),</span>
+        <span class="n">col_offset</span><span class="o">=</span><span class="n">mx</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">col_off</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)),</span>
+        <span class="n">rel_ids</span><span class="o">=</span><span class="p">[</span><span class="n">unique_rels</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">et</span><span class="p">)</span> <span class="k">for</span> <span class="n">et</span> <span class="ow">in</span> <span class="n">metapath</span><span class="p">],</span>
+        <span class="n">num_nodes_dict</span><span class="o">=</span><span class="n">num_nodes</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="metapath_node_types">
+<a class="viewcode-back" href="../../functions.html#mlx_cluster.metapath_node_types">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">metapath_node_types</span><span class="p">(</span><span class="n">metapath</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">EdgeType</span><span class="p">],</span> <span class="n">walk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Node type of each of the ``walk_length + 1`` positions of a walk."""</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">metapath</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">metapath</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]]</span> <span class="o">+</span> <span class="p">[</span><span class="n">metapath</span><span class="p">[</span><span class="n">l</span> <span class="o">%</span> <span class="n">m</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">walk_length</span><span class="p">)]</span></div>
+
+
+
+<div class="viewcode-block" id="metapath_random_walk">
+<a class="viewcode-back" href="../../functions.html#mlx_cluster.metapath_random_walk">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">metapath_random_walk</span><span class="p">(</span>
+    <span class="n">csr</span><span class="p">:</span> <span class="n">MetaPathCSR</span><span class="p">,</span>
+    <span class="n">start</span><span class="p">:</span> <span class="n">mx</span><span class="o">.</span><span class="n">array</span><span class="p">,</span>
+    <span class="n">walk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">rand</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">mx</span><span class="o">.</span><span class="n">array</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">stream</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">mx</span><span class="o">.</span><span class="n">Stream</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">mx</span><span class="o">.</span><span class="n">array</span><span class="p">,</span> <span class="n">mx</span><span class="o">.</span><span class="n">array</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Meta-path guided uniform random walks.</span>
+
+<span class="sd">    Step ``l`` of every walk follows edge type ``metapath[l % len(metapath)]``,</span>
+<span class="sd">    choosing uniformly among the current node's neighbors of that type. If a</span>
+<span class="sd">    node has no such neighbor, the walk stops and the remaining entries are</span>
+<span class="sd">    ``-1``.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        csr: Output of :func:`build_metapath_csr`.</span>
+<span class="sd">        start: Start node ids, local to ``metapath[0][0]``'s node type.</span>
+<span class="sd">        walk_length: Number of steps per walk. If it is longer than the</span>
+<span class="sd">            meta-path, the meta-path must be cyclic (end where it starts).</span>
+<span class="sd">        rand: Optional uniform ``[0, 1)`` values of shape</span>
+<span class="sd">            ``[len(start), walk_length]``. Drawn from MLX's RNG if omitted,</span>
+<span class="sd">            so ``mx.random.seed`` makes walks reproducible.</span>
+<span class="sd">        stream: Stream or device to run on (``mx.cpu`` or ``mx.gpu``).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        tuple ``(nodes, edges)``: ``nodes`` is ``[len(start), walk_length + 1]``</span>
+<span class="sd">        local node ids (the type of column ``j`` is</span>
+<span class="sd">        ``metapath_node_types(metapath, walk_length)[j]``); ``edges`` is</span>
+<span class="sd">        ``[len(start), walk_length]`` edge offsets within each relation's CSR.</span>
+
+<span class="sd">    Example:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        metapath = [</span>
+<span class="sd">            ("author", "writes", "paper"),</span>
+<span class="sd">            ("paper", "published_in", "venue"),</span>
+<span class="sd">            ("venue", "publishes", "paper"),</span>
+<span class="sd">            ("paper", "written_by", "author"),</span>
+<span class="sd">        ]</span>
+<span class="sd">        csr = build_metapath_csr(edge_index_dict, metapath)</span>
+<span class="sd">        nodes, _ = metapath_random_walk(csr, mx.arange(10), walk_length=8)</span>
+<span class="sd">    """</span>
+    <span class="n">metapath</span> <span class="o">=</span> <span class="n">csr</span><span class="o">.</span><span class="n">metapath</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">metapath</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">walk_length</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"walk_length must be &gt;= 1"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">walk_length</span> <span class="o">&gt;</span> <span class="n">m</span> <span class="ow">and</span> <span class="n">metapath</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="o">!=</span> <span class="n">metapath</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"walk_length (</span><span class="si">{</span><span class="n">walk_length</span><span class="si">}</span><span class="s2">) is longer than the metapath (</span><span class="si">{</span><span class="n">m</span><span class="si">}</span><span class="s2">), "</span>
+            <span class="s2">"so the metapath must be cyclic: it ends at "</span>
+            <span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">metapath</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s2">' but starts at '</span><span class="si">{</span><span class="n">metapath</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">'"</span>
+        <span class="p">)</span>
+
+    <span class="n">start</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">start</span><span class="p">)</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">mx</span><span class="o">.</span><span class="n">array</span><span class="p">)</span> <span class="k">else</span> <span class="n">start</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">start</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">mx</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">rand</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">rand</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">start</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">walk_length</span><span class="p">))</span>
+    <span class="n">rand</span> <span class="o">=</span> <span class="n">rand</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">mx</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+    <span class="n">step_rel</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">csr</span><span class="o">.</span><span class="n">rel_ids</span><span class="p">[</span><span class="n">l</span> <span class="o">%</span> <span class="n">m</span><span class="p">]</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">walk_length</span><span class="p">)],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">_metapath_random_walk</span><span class="p">(</span>
+        <span class="n">csr</span><span class="o">.</span><span class="n">rowptr</span><span class="p">,</span>
+        <span class="n">csr</span><span class="o">.</span><span class="n">col</span><span class="p">,</span>
+        <span class="n">csr</span><span class="o">.</span><span class="n">rowptr_offset</span><span class="p">,</span>
+        <span class="n">csr</span><span class="o">.</span><span class="n">col_offset</span><span class="p">,</span>
+        <span class="n">step_rel</span><span class="p">,</span>
+        <span class="n">start</span><span class="p">,</span>
+        <span class="n">rand</span><span class="p">,</span>
+        <span class="n">walk_length</span><span class="p">,</span>
+        <span class="n">stream</span><span class="o">=</span><span class="n">stream</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+</pre></div>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Vinay Pandya
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2025, Vinay Pandya.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

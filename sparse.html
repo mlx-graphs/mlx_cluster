@@ -472,14 +472,14 @@ break-even.</p>
 </colgroup>
 <thead>
 <tr class="row-odd"><th class="head"></th>
-<th class="head"><p><code class="xref py py-func docutils literal notranslate"><span class="pre">spmm_coo()</span></code></p></th>
-<th class="head"><p><code class="xref py py-func docutils literal notranslate"><span class="pre">spmm_csr()</span></code></p></th>
+<th class="head"><p><a class="reference internal" href="functions.html#mlx_cluster.spmm_coo" title="mlx_cluster.spmm_coo"><code class="xref py py-func docutils literal notranslate"><span class="pre">spmm_coo()</span></code></a></p></th>
+<th class="head"><p><a class="reference internal" href="functions.html#mlx_cluster.spmm_csr" title="mlx_cluster.spmm_csr"><code class="xref py py-func docutils literal notranslate"><span class="pre">spmm_csr()</span></code></a></p></th>
 </tr>
 </thead>
 <tbody>
 <tr class="row-even"><td><p>Input</p></td>
 <td><p>The edge list as-is, any order</p></td>
-<td><p>CSR from <code class="xref py py-func docutils literal notranslate"><span class="pre">coo_to_csr()</span></code> (one sort per graph; cache it)</p></td>
+<td><p>CSR from <a class="reference internal" href="functions.html#mlx_cluster.coo_to_csr" title="mlx_cluster.coo_to_csr"><code class="xref py py-func docutils literal notranslate"><span class="pre">coo_to_csr()</span></code></a> (one sort per graph; cache it)</p></td>
 </tr>
 <tr class="row-odd"><td><p>GPU kernel</p></td>
 <td><p>One thread per (edge, feature); atomic adds</p></td>
@@ -556,7 +556,7 @@ not supported.</p>
 <p>Real graphs often have a few nodes with a huge number of neighbours. A
 one-thread-per-node kernel would leave one thread looping over all of a hub's
 edges while the rest of the GPU sits idle. With <code class="docutils literal notranslate"><span class="pre">long_rows</span></code> (built by
-<code class="xref py py-func docutils literal notranslate"><span class="pre">coo_to_csr()</span></code>), nodes with more than <code class="docutils literal notranslate"><span class="pre">long_row_threshold</span></code>
+<a class="reference internal" href="functions.html#mlx_cluster.coo_to_csr" title="mlx_cluster.coo_to_csr"><code class="xref py py-func docutils literal notranslate"><span class="pre">coo_to_csr()</span></code></a>), nodes with more than <code class="docutils literal notranslate"><span class="pre">long_row_threshold</span></code>
 edges (default 256) are cut into chunks of up to <code class="docutils literal notranslate"><span class="pre">chunk_size</span></code> edges
 (default 2048). Each chunk is reduced by its own GPU threadgroup, then the
 chunk results are combined in a fixed order. This keeps results
@@ -569,14 +569,14 @@ cannot run inside <code class="docutils literal notranslate"><span class="pre">m
 <section id="fast-backward-pass-transpose">
 <h2>Fast backward pass (transpose)<a class="headerlink" href="#fast-backward-pass-transpose" title="Link to this heading">#</a></h2>
 <p>The gradient of <code class="docutils literal notranslate"><span class="pre">sum</span></code>/<code class="docutils literal notranslate"><span class="pre">mean</span></code> with respect to <code class="docutils literal notranslate"><span class="pre">x</span></code> is <code class="docutils literal notranslate"><span class="pre">A^T</span> <span class="pre">&#64;</span> <span class="pre">grad</span></code>.
-<code class="xref py py-func docutils literal notranslate"><span class="pre">coo_to_csr()</span></code> also builds the transposed CSR
+<a class="reference internal" href="functions.html#mlx_cluster.coo_to_csr" title="mlx_cluster.coo_to_csr"><code class="xref py py-func docutils literal notranslate"><span class="pre">coo_to_csr()</span></code></a> also builds the transposed CSR
 (<code class="docutils literal notranslate"><span class="pre">csr.transpose</span></code>, edges grouped by source node, with its own <code class="docutils literal notranslate"><span class="pre">long_rows</span></code>).
-When it is passed to <code class="xref py py-func docutils literal notranslate"><span class="pre">spmm_csr()</span></code>, the backward pass runs on
+When it is passed to <a class="reference internal" href="functions.html#mlx_cluster.spmm_csr" title="mlx_cluster.spmm_csr"><code class="xref py py-func docutils literal notranslate"><span class="pre">spmm_csr()</span></code></a>, the backward pass runs on
 the CSR kernel too: no atomics, deterministic, and load-balanced for nodes
 with many outgoing edges. This holds for every reduction: for <code class="docutils literal notranslate"><span class="pre">max</span></code>/<code class="docutils literal notranslate"><span class="pre">min</span></code>
 each source node loops over its outgoing edges and adds the gradient of the
 edges that won (see <a class="reference internal" href="#reductions"><span class="std std-ref">Reductions</span></a>). Without <code class="docutils literal notranslate"><span class="pre">transpose</span></code> (and with
-<code class="xref py py-func docutils literal notranslate"><span class="pre">spmm_coo()</span></code>), the gradient w.r.t. <code class="docutils literal notranslate"><span class="pre">x</span></code> uses atomic adds
+<a class="reference internal" href="functions.html#mlx_cluster.spmm_coo" title="mlx_cluster.spmm_coo"><code class="xref py py-func docutils literal notranslate"><span class="pre">spmm_coo()</span></code></a>), the gradient w.r.t. <code class="docutils literal notranslate"><span class="pre">x</span></code> uses atomic adds
 instead, so it is correct but its last bits can vary between runs. <code class="docutils literal notranslate"><span class="pre">coo_to_csr(...,</span> <span class="pre">transpose=False)</span></code> saves the extra
 memory (about three index arrays) when only the forward pass is needed.</p>
 </section>
@@ -591,7 +591,7 @@ of the destination's query and the source's key:</p>
 <p>Gather-scatter computes this as <code class="docutils literal notranslate"><span class="pre">(a[row]</span> <span class="pre">*</span> <span class="pre">b[col]).sum(-1)</span></code>, which first
 copies one row of <code class="docutils literal notranslate"><span class="pre">a</span></code> and one of <code class="docutils literal notranslate"><span class="pre">b</span></code> <strong>per edge</strong> (two
 <code class="docutils literal notranslate"><span class="pre">[num_edges,</span> <span class="pre">heads,</span> <span class="pre">channels]</span></code> arrays) to produce only
-<code class="docutils literal notranslate"><span class="pre">[num_edges,</span> <span class="pre">heads]</span></code> scores. <code class="xref py py-func docutils literal notranslate"><span class="pre">edge_scores()</span></code> reads the two
+<code class="docutils literal notranslate"><span class="pre">[num_edges,</span> <span class="pre">heads]</span></code> scores. <a class="reference internal" href="functions.html#mlx_cluster.edge_scores" title="mlx_cluster.edge_scores"><code class="xref py py-func docutils literal notranslate"><span class="pre">edge_scores()</span></code></a> reads the two
 rows it needs for each edge and writes the score directly: one GPU SIMD group
 per (edge, head), all heads in one launch.</p>
 <p>It is differentiable with respect to <code class="docutils literal notranslate"><span class="pre">a</span></code> and <code class="docutils literal notranslate"><span class="pre">b</span></code>, and the backward pass
@@ -646,9 +646,9 @@ keys <code class="docutils literal notranslate"><span class="pre">b</span></code
 <li><p><code class="docutils literal notranslate"><span class="pre">mx.grad</span></code> / <code class="docutils literal notranslate"><span class="pre">mx.vjp</span></code> and <code class="docutils literal notranslate"><span class="pre">mx.compile</span></code> are supported; <code class="docutils literal notranslate"><span class="pre">mx.jvp</span></code>,
 <code class="docutils literal notranslate"><span class="pre">mx.vmap</span></code> and second-order gradients are not.</p></li>
 </ul>
-<p><code class="xref py py-func docutils literal notranslate"><span class="pre">sddmm()</span></code> computes the same single-head dot product but is not
+<p><a class="reference internal" href="functions.html#mlx_cluster.sddmm" title="mlx_cluster.sddmm"><code class="xref py py-func docutils literal notranslate"><span class="pre">sddmm()</span></code></a> computes the same single-head dot product but is not
 differentiable: it exists for the backward pass of SpMM. Use
-<code class="xref py py-func docutils literal notranslate"><span class="pre">edge_scores()</span></code> in models.</p>
+<a class="reference internal" href="functions.html#mlx_cluster.edge_scores" title="mlx_cluster.edge_scores"><code class="xref py py-func docutils literal notranslate"><span class="pre">edge_scores()</span></code></a> in models.</p>
 <p>Measured on an Apple M1 (8 GB), one <code class="docutils literal notranslate"><span class="pre">TransformerConv</span></code> layer from mlx-graphs
 (4 heads, 128 features, forward + backward): about <strong>3x less memory</strong> at every
 graph size (2.74 GB → 0.84 GB on 500k edges) and about <strong>2x faster</strong> on 500k
@@ -659,7 +659,7 @@ edges, compared with gather-scatter.</p>
 <p>mlx-graphs uses these kernels automatically in layers decorated with
 <code class="docutils literal notranslate"><span class="pre">&#64;fused_message_passing</span></code>, for example <code class="docutils literal notranslate"><span class="pre">GCNConv</span></code>, <code class="docutils literal notranslate"><span class="pre">SAGEConv</span></code>,
 <code class="docutils literal notranslate"><span class="pre">GINConv</span></code>, <code class="docutils literal notranslate"><span class="pre">GATConv</span></code>, <code class="docutils literal notranslate"><span class="pre">GATv2Conv</span></code> and <code class="docutils literal notranslate"><span class="pre">TransformerConv</span></code> (which also
-computes its attention scores with <code class="xref py py-func docutils literal notranslate"><span class="pre">edge_scores()</span></code>). It falls
+computes its attention scores with <a class="reference internal" href="functions.html#mlx_cluster.edge_scores" title="mlx_cluster.edge_scores"><code class="xref py py-func docutils literal notranslate"><span class="pre">edge_scores()</span></code></a>). It falls
 back to gather-scatter whenever the fused path does not apply, or with an
 mlx-cluster that does not have these functions. See the mlx-graphs
 documentation for details.</p>
@@ -670,7 +670,7 @@ documentation for details.</p>
 <li><p>SpMM messages must have the form <code class="docutils literal notranslate"><span class="pre">values[e]</span> <span class="pre">*</span> <span class="pre">x[col[e]]</span></code>, with one scalar
 weight per edge (or per edge and head, one SpMM per head). Attention layers
 fit this form once their scores are computed (with
-<code class="xref py py-func docutils literal notranslate"><span class="pre">edge_scores()</span></code> for dot-product attention), but messages
+<a class="reference internal" href="functions.html#mlx_cluster.edge_scores" title="mlx_cluster.edge_scores"><code class="xref py py-func docutils literal notranslate"><span class="pre">edge_scores()</span></code></a> for dot-product attention), but messages
 that add a per-edge feature (e.g. <code class="docutils literal notranslate"><span class="pre">TransformerConv</span></code> with edge features,
 <code class="docutils literal notranslate"><span class="pre">x[col[e]]</span> <span class="pre">+</span> <span class="pre">edge_attr[e]</span></code>) still need gather-scatter.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">softmax</span></code> itself produces one value per edge, so it is computed outside
