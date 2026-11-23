@@ -2,9 +2,9 @@ name: MLX Cluster Tests
 
 on:
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
   push:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   test:
@@ -12,33 +12,33 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install package and dependencies
-      run: |
-        python -m pip install --upgrade pip
-        # build tools: setuptools >= 70.1 (or the `wheel` package) is needed
-        # to build without isolation; the runner's setuptools 65.5 is too old
-        python -m pip install --upgrade "setuptools>=70.1" wheel nanobind==3.1.0 "cmake>=3.24" "mlx>=0.32"
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install package and dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # build tools: setuptools >= 70.1 (or the `wheel` package) is needed
+          # to build without isolation; the runner's setuptools 65.5 is too old
+          python -m pip install --upgrade "setuptools>=70.1" wheel nanobind==3.1.0 "cmake>=3.24" "mlx>=0.32"
 
-        # test dependencies, except mlx-graphs
-        python -m pip install torch "pytest==7.4.4" "scipy>=1.13.0" "numpy>=1.26.3" \
-          "requests==2.31.0" "fsspec[http]==2024.2.0" "tqdm==4.66.1"
+          # test dependencies, except mlx-graphs
+          python -m pip install torch "pytest==7.4.4" "scipy>=1.13.0" "numpy>=1.26.3" \
+            "requests==2.31.0" "fsspec[http]==2024.2.0" "tqdm==4.66.1"
 
-        # released mlx-graphs pins mlx<0.31 and pulls mlx_cluster from PyPI;
-        # --no-deps keeps both from replacing what we install here
-        python -m pip install --no-deps "mlx-graphs>=0.0.8"
+          # released mlx-graphs pins mlx<0.31 and pulls mlx_cluster from PyPI;
+          # --no-deps keeps both from replacing what we install here
+          python -m pip install --no-deps "mlx-graphs>=0.0.8"
 
-        # build last, against the mlx that will actually run the tests
-        python -m pip install --no-build-isolation --no-deps -e . --verbose
+          # build last, against the mlx that will actually run the tests
+          python -m pip install --no-build-isolation --no-deps -e . --verbose
 
-        python -c "import mlx.core as mx, mlx_cluster, mlx_graphs; print('mlx', mx.__version__, '- imports ok')"
-    - name: Run tests with pytest
-      run: |
-        pytest tests
+          python -c "import mlx.core as mx, mlx_cluster, mlx_graphs; print('mlx', mx.__version__, '- imports ok')"
+      - name: Run tests with pytest
+        run: |
+          pytest tests

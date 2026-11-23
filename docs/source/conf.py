@@ -9,15 +9,16 @@ sys.path.insert(0, os.path.abspath("../../mlx_cluster"))
 # Try importing to verify path is correct
 try:
     import mlx_cluster
+
     print(f"mlx_cluster imported successfully from: {mlx_cluster.__file__}")
 except ImportError as e:
     print("Failed to import mlx_cluster:", e)
     print("Python path:", sys.path)
 
-project = 'mlx-cluster'
-copyright = '2025, Vinay Pandya'
-author = 'Vinay Pandya'
-release = '0.1.3'
+project = "mlx-cluster"
+copyright = "2025, Vinay Pandya"
+author = "Vinay Pandya"
+release = "0.1.3rc1"
 
 # -- General configuration ---------------------------------------------------
 extensions = [
@@ -33,11 +34,11 @@ extensions = [
 
 # Autodoc settings
 autodoc_default_options = {
-    'members': True,
-    'member-order': 'bysource',
-    'special-members': '__init__',
-    'undoc-members': True,
-    'exclude-members': '__weakref__'
+    "members": True,
+    "member-order": "bysource",
+    "special-members": "__init__",
+    "undoc-members": True,
+    "exclude-members": "__weakref__",
 }
 
 napoleon_use_param = True
@@ -45,7 +46,9 @@ napoleon_google_docstring = True
 napoleon_preprocess_types = True
 napoleon_attr_annotations = True
 napoleon_use_param = True
-napoleon_use_ivar = True      # render "Attributes:" as a compact list, not one heading per field
+napoleon_use_ivar = (
+    True  # render "Attributes:" as a compact list, not one heading per field
+)
 napoleon_google_docstring = True
 typehints_use_signature = True
 typehints_use_signature_return = True
@@ -53,19 +56,19 @@ autosummary_generate = True
 autodoc_class_signature = "separated"
 
 intersphinx_mapping = {
-    'python': ('https://docs.python.org/3', None),
-    'numpy': ('https://numpy.org/doc/stable/', None),
-    'mlx': ('https://ml-explore.github.io/mlx/build/html/', None)
+    "python": ("https://docs.python.org/3", None),
+    "numpy": ("https://numpy.org/doc/stable/", None),
+    "mlx": ("https://ml-explore.github.io/mlx/build/html/", None),
 }
 
-templates_path = ['_templates']
+templates_path = ["_templates"]
 exclude_patterns = ["_build", "**.ipynb_checkpoints"]
-language = 'Python'
+language = "Python"
 master_doc = "index"
 
 # -- Options for HTML output -------------------------------------------------
-html_theme = 'sphinx_book_theme'
-html_static_path = ['_static']
+html_theme = "sphinx_book_theme"
+html_static_path = ["_static"]
 html_title = "mlx-cluster documentation"
 
 html_theme_options = {
@@ -79,7 +82,6 @@ html_theme_options = {
     },
     "home_page_in_toc": False,
     "github_url": "https://github.com/vinayhpandya/mlx_cluster",
-    
     # Better sidebar navigation - valid options only
     "collapse_navigation": False,
 }
