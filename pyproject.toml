@@ -19,14 +19,15 @@ classifiers = [
 [project.optional-dependencies]
 dev = []
 docs = [
-  "mlx<=0.32",
-  "mlx-graphs>=0.0.8",
-  "ipython==8.21.0",
-  "sphinx>=7.2.6",
-  "sphinx-book-theme==1.1.0",
-  "sphinx-autodoc-typehints==1.25.2",
-  "nbsphinx==0.9.3",
-  "sphinx-gallery==0.15.0",
+  # the documentation site (zensical.toml, docs/), same tools as mlx-graphs.
+  # The API page inspects the compiled extension: build mlx_cluster first.
+  "zensical==0.1.3",
+  "mkdocstrings==1.0.8",
+  "mkdocstrings-python==2.0.11",
+  "griffe==2.4.1",
+  "mkdocs-autorefs==1.4.5",
+  "pymdown-extensions==13.1.2",
+  "ruff==0.14.6",  # formats the signatures (separate_signature)
 ]
 
 test = [

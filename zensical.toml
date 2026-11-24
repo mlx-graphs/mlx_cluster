@@ -1,0 +1,177 @@
+# Documentation site of mlx-cluster, built with Zensical (https://zensical.org),
+# with the same setup as mlx-graphs.
+#
+#   pip install -e . && pip install -e '.[docs]'
+#   zensical serve                     # http://localhost:8000/mlx_cluster/, live reload
+#   zensical build --strict --clean    # static site in site/ (as CI does)
+#
+# The pages are Markdown files in docs/content. The API page renders the
+# docstrings with mkdocstrings; the functions of the C++ extension are read
+# from the installed package, so mlx_cluster must be built first (a CPU-only
+# build is enough). See docs/README.md.
+
+[project]
+site_name = "mlx-cluster"
+site_description = "Graph sampling and sparse kernels for MLX: random walks, neighbor sampling, SpMM and attention scores on Apple Silicon."
+site_author = "mlx-graphs contributors"
+site_url = "https://mlx-graphs.github.io/mlx_cluster/"
+copyright = "Copyright &copy; 2024-2026 mlx-graphs contributors"
+docs_dir = "docs/content"
+site_dir = "site"
+repo_url = "https://github.com/mlx-graphs/mlx_cluster"
+repo_name = "mlx-graphs/mlx_cluster"
+edit_uri = "edit/main/docs/content/"
+strict = false
+extra_css = [
+  "https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css",
+  "assets/css/extra.css",
+]
+extra_javascript = [
+  "https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js",
+  "https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js",
+  "assets/js/katex.js",
+]
+
+nav = [
+  { "Home" = "index.md" },
+  { "Getting started" = [
+    { "Installation" = "installation.md" },
+    { "Quickstart" = "quickstart.md" },
+  ] },
+  { "Guides" = [
+    { "Sparse matrix multiplication" = "sparse.md" },
+  ] },
+  { "API reference" = "api.md" },
+]
+
+[project.extra]
+generator = false
+
+[[project.extra.social]]
+icon = "fontawesome/brands/github"
+link = "https://github.com/mlx-graphs/mlx_cluster"
+name = "mlx-cluster on GitHub"
+
+[[project.extra.social]]
+icon = "fontawesome/brands/python"
+link = "https://pypi.org/project/mlx-cluster/"
+name = "mlx-cluster on PyPI"
+
+[[project.extra.social]]
+icon = "fontawesome/solid/book"
+link = "https://mlx-graphs.github.io/mlx-graphs/"
+name = "mlx-graphs documentation"
+
+[project.theme]
+custom_dir = "docs/overrides"
+language = "en"
+logo = "assets/images/favicon.svg"
+favicon = "assets/images/favicon.ico"
+features = [
+  "content.action.edit",
+  "content.action.view",
+  "content.code.annotate",
+  "content.code.copy",
+  "content.tabs.link",
+  "content.tooltips",
+  "navigation.footer",
+  "navigation.indexes",
+  "navigation.instant",
+  "navigation.instant.prefetch",
+  "navigation.path",
+  "navigation.sections",
+  "navigation.tabs",
+  "navigation.top",
+  "navigation.tracking",
+  "search.highlight",
+  "toc.follow",
+]
+
+[project.theme.icon]
+repo = "fontawesome/brands/github"
+
+[project.theme.font]
+text = "Inter"
+code = "JetBrains Mono"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme)"
+toggle.icon = "lucide/sun-moon"
+toggle.name = "Switch to light mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
+scheme = "default"
+primary = "custom"
+accent = "custom"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
+scheme = "slate"
+primary = "custom"
+accent = "custom"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to system preference"
+
+[project.markdown_extensions]
+abbr = {}
+admonition = {}
+attr_list = {}
+def_list = {}
+footnotes = {}
+md_in_html = {}
+tables = {}
+toc.permalink = true
+pymdownx.arithmatex.generic = true
+pymdownx.betterem = {}
+pymdownx.details = {}
+pymdownx.highlight.anchor_linenums = true
+pymdownx.highlight.line_spans = "__span"
+pymdownx.highlight.pygments_lang_class = true
+pymdownx.inlinehilite = {}
+pymdownx.keys = {}
+pymdownx.mark = {}
+pymdownx.smartsymbols = {}
+pymdownx.superfences = {}
+pymdownx.tabbed.alternate_style = true
+pymdownx.tilde = {}
+
+[project.plugins.mkdocstrings.handlers.python]
+paths = ["."]
+inventories = [
+  "https://docs.python.org/3/objects.inv",
+  "https://numpy.org/doc/stable/objects.inv",
+]
+
+[project.plugins.mkdocstrings.handlers.python.options]
+# The functions of the C++ extension (mlx_cluster._ext) have no Python source:
+# griffe inspects them in the installed package.
+allow_inspection = true
+docstring_style = "google"
+docstring_options.ignore_init_summary = true
+docstring_options.returns_named_value = false
+docstring_options.warn_missing_types = false
+docstring_options.warn_unknown_params = false
+docstring_section_style = "table"
+extensions = ["docs/scripts/griffe_rst.py"]
+filters = ["!^_"]
+heading_level = 2
+inherited_members = false
+members_order = "source"
+merge_init_into_class = true
+parameter_headings = false
+separate_signature = true
+line_length = 80
+show_bases = true
+show_root_full_path = false
+show_root_heading = true
+show_root_members_full_path = false
+show_signature_annotations = true
+show_source = true
+show_symbol_type_heading = true
+show_symbol_type_toc = true
+signature_crossrefs = true
+summary = true
+unwrap_annotated = true
