@@ -39,11 +39,15 @@ inline float leaky_grad(float z, float slope) {
 
 // ---------------------------------------------------------------------------
 // Forward: one SIMD group per (edge, head), lanes stride over the channels,
-// then simd_sum. The host dispatches a (32, E * H) grid with (32, 8)
-// threadgroups, so the 32 lanes of a SIMD group share (edge, head) and exit
-// together.
+// then simd_sum. The host dispatches a (32, H, E) grid with (32, th, tz)
+// threadgroups: x is the lane, so the 32 lanes of a SIMD group share
+// (head, edge) and exit together, and neither needs an integer division.
+//
+// CH > 0 fixes the channel count at compile time, so the channel loop is
+// unrolled (the host picks it for common channel counts); CH == 0 reads
+// the count from C.
 // ---------------------------------------------------------------------------
-template <typename I>
+template <typename I, uint CH>
 [[kernel]] void gatv2_scores(
     const device I* row [[buffer(0)]],
     const device I* col [[buffer(1)]],
@@ -52,17 +56,17 @@ template <typename I>
     const device float* att [[buffer(4)]],
     device float* out [[buffer(5)]],
     constant uint& H [[buffer(6)]],
-    constant uint& C [[buffer(7)]],
-    constant uint& EH [[buffer(8)]],
+    constant uint& C_runtime [[buffer(7)]],
+    constant uint& E [[buffer(8)]],
     constant float& slope [[buffer(9)]],
-    uint2 gid [[thread_position_in_grid]],
+    uint3 gid [[thread_position_in_grid]],
     uint lane [[thread_index_in_simdgroup]]) {
-  const uint eh = gid.y;
-  if (eh >= EH) {
+  const uint h = gid.y;
+  const uint e = gid.z;
+  if (h >= H || e >= E) {
     return;
   }
-  const uint e = eh / H;
-  const uint h = eh - e * H;
+  const uint C = CH > 0 ? CH : C_runtime;
   const ulong d = (static_cast<ulong>(row[e]) * H + h) * C;
   const ulong s = (static_cast<ulong>(col[e]) * H + h) * C;
   const ulong a = static_cast<ulong>(h) * C;
@@ -73,7 +77,7 @@ template <typename I>
   }
   acc = simd_sum(acc);
   if (lane == 0) {
-    out[eh] = acc;
+    out[static_cast<ulong>(e) * H + h] = acc;
   }
 }
 
@@ -242,8 +246,18 @@ template <bool WITH_ATT>
   template [[host_name(name)]] [[kernel]] decltype(func<__VA_ARGS__>) \
       func<__VA_ARGS__>;
 
-instantiate_kernel("gatv2_scores_i32", gatv2_scores, int)
-instantiate_kernel("gatv2_scores_i64", gatv2_scores, long)
+instantiate_kernel("gatv2_scores_i32_c0", gatv2_scores, int, 0)
+instantiate_kernel("gatv2_scores_i32_c8", gatv2_scores, int, 8)
+instantiate_kernel("gatv2_scores_i32_c16", gatv2_scores, int, 16)
+instantiate_kernel("gatv2_scores_i32_c32", gatv2_scores, int, 32)
+instantiate_kernel("gatv2_scores_i32_c64", gatv2_scores, int, 64)
+instantiate_kernel("gatv2_scores_i32_c128", gatv2_scores, int, 128)
+instantiate_kernel("gatv2_scores_i64_c0", gatv2_scores, long, 0)
+instantiate_kernel("gatv2_scores_i64_c8", gatv2_scores, long, 8)
+instantiate_kernel("gatv2_scores_i64_c16", gatv2_scores, long, 16)
+instantiate_kernel("gatv2_scores_i64_c32", gatv2_scores, long, 32)
+instantiate_kernel("gatv2_scores_i64_c64", gatv2_scores, long, 64)
+instantiate_kernel("gatv2_scores_i64_c128", gatv2_scores, long, 128)
 instantiate_kernel("gatv2_grad_rows_att_u32", gatv2_grad_rows, true, uint)
 instantiate_kernel("gatv2_grad_rows_att_i64", gatv2_grad_rows, true, long)
 instantiate_kernel("gatv2_grad_rows_u32", gatv2_grad_rows, false, uint)
