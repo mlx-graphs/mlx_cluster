@@ -42,6 +42,8 @@ the SpMM functions.
 
 ::: mlx_cluster.edge_scores
 
+::: mlx_cluster.gatv2_scores
+
 ::: mlx_cluster.build_long_rows
 
 ::: mlx_cluster.CSR

@@ -22,7 +22,7 @@ from typing import Literal, NamedTuple, Optional
 import mlx.core as mx
 import numpy as np
 
-from ._ext import _edge_scores, _spmm_coo, _spmm_csr, sddmm
+from ._ext import _edge_scores, _gatv2_scores, _spmm_coo, _spmm_csr, sddmm
 
 SpMMReduce = Literal["sum", "add", "mean", "max", "min"]
 
@@ -32,6 +32,7 @@ __all__ = [
     "LongRows",
     "coo_to_csr",
     "edge_scores",
+    "gatv2_scores",
     "sddmm",
     "spmm_coo",
     "spmm_csr",
@@ -55,6 +56,9 @@ class LongRows(NamedTuple):
         chunk_start: ``int64 [K]`` first edge of each chunk.
         chunk_end: ``int64 [K]`` one past the last edge of each chunk.
         threshold: rows with more edges than this are "long".
+        owner: optional ``int64 [K]``: the long row of each chunk, as an
+            index into ``rows`` (used by :func:`gatv2_scores`; computed from
+            ``chunk_ptr`` when ``None``).
     """
 
     rows: mx.array
@@ -62,6 +66,7 @@ class LongRows(NamedTuple):
     chunk_start: mx.array
     chunk_end: mx.array
     threshold: int
+    owner: Optional[mx.array] = None
 
 
 def build_long_rows(
@@ -91,6 +96,7 @@ def build_long_rows(
         chunk_start=mx.array(start.astype(np.int64)),
         chunk_end=mx.array(end.astype(np.int64)),
         threshold=int(threshold),
+        owner=mx.array(np.repeat(np.arange(rows.size, dtype=np.int64), n_chunks)),
     )
 
 
@@ -107,12 +113,16 @@ class CSRTranspose(NamedTuple):
         perm: ``int64 [num_edges]``; transposed edge ``i`` is CSR edge
             ``perm[i]`` (used to reorder edge values).
         long_rows: optional :class:`LongRows` for high out-degree nodes.
+        edge: optional ``[num_edges]``: the original (COO input) index of each
+            transposed edge, ``CSR.perm[perm]`` (used by :func:`gatv2_scores`;
+            computed on every call when ``None``).
     """
 
     rowptr: mx.array
     col: mx.array
     perm: mx.array
     long_rows: Optional[LongRows] = None
+    edge: Optional[mx.array] = None
 
 
 class CSR(NamedTuple):
@@ -214,6 +224,7 @@ def coo_to_csr(
                 if long_row_threshold is None
                 else build_long_rows(rowptr_t, long_row_threshold, chunk_size)
             ),
+            edge=perm[perm_t],
         )
 
     return CSR(
@@ -380,3 +391,104 @@ def edge_scores(
     if single_head:
         out = out[:, 0]
     return out.astype(a.dtype)
+
+
+def gatv2_scores(
+    row: mx.array,
+    col: mx.array,
+    x_dst: mx.array,
+    x_src: mx.array,
+    att: mx.array,
+    negative_slope: float = 0.2,
+    *,
+    csr: Optional[CSR] = None,
+    stream=None,
+) -> mx.array:
+    """GATv2 attention scores (logits, before the softmax), one per edge and
+    head.
+
+    ``out[e, h] = sum_c att[h, c] * leaky_relu(x_src[col[e], h, c] + x_dst[row[e], h, c])``
+
+    Equivalent to ``(leaky_relu(x_src[col] + x_dst[row]) * att).sum(-1)``
+    without materialising the ``[num_edges, heads, channels]`` gathers, in the
+    forward or the backward pass. Differentiable w.r.t. ``x_dst``, ``x_src``
+    and ``att`` (not ``mx.jvp``, ``mx.vmap`` or second order).
+
+    GPU kernels: forward, one SIMD group per (edge, head). Backward, no
+    atomics: one thread per (node, feature) sums the node's edges on the CSR
+    (``grad_x_dst``) or on its transpose (``grad_x_src``), deterministic.
+    Hub nodes use the chunked long-row path of :func:`spmm_csr` when the CSR
+    has :class:`LongRows`.
+
+    Args:
+        row: ``[num_edges]`` destination node of each edge (``edge_index[1]``).
+        col: ``[num_edges]`` source node of each edge (``edge_index[0]``).
+        x_dst: ``[num_dst, heads, channels]`` (or ``[num_dst, channels]``)
+            features of the destination nodes.
+        x_src: ``[num_src, heads, channels]`` (or ``[num_src, channels]``)
+            features of the source nodes.
+        att: ``[heads, channels]`` (or ``[1, heads, channels]``, or
+            ``[channels]`` for 2-D features) attention vector.
+        negative_slope: slope of the LeakyReLU for negative inputs.
+        csr: the CSR of these edges from :func:`coo_to_csr`
+            (``coo_to_csr(row, col, num_dst, num_cols=num_src)``), with its
+            transpose. Only the backward pass uses it. Build it once per graph
+            and pass it; when omitted, it is built on every call (a sort and,
+            for the long rows, a read-back to the host). Edge lists in int32
+            or int64 are used as they are on the GPU (no per-call conversion).
+
+    Returns:
+        ``[num_edges, heads]`` (``[num_edges]`` for 2-D features), with the
+        dtype of ``x_dst``.
+    """
+    if x_dst.ndim != x_src.ndim or x_dst.ndim not in (2, 3):
+        raise ValueError(
+            "x_dst and x_src must both be [num_nodes, heads, channels] or both "
+            f"[num_nodes, channels], got shapes {x_dst.shape} and {x_src.shape}."
+        )
+    single_head = x_dst.ndim == 2
+    if single_head:
+        x_dst, x_src = x_dst[:, None, :], x_src[:, None, :]
+    att = att.reshape(x_dst.shape[1:])
+    if csr is None:
+        csr = coo_to_csr(row, col, x_dst.shape[0], num_cols=x_src.shape[0])
+    if csr.transpose is None:
+        raise ValueError(
+            "gatv2_scores needs the transposed CSR (coo_to_csr(..., transpose=True))."
+        )
+    t = csr.transpose
+    kwargs = {}
+    for prefix, lr in (("", csr.long_rows), ("t_", t.long_rows)):
+        if lr is not None:
+            kwargs.update(
+                {
+                    f"{prefix}long_rows": lr.rows,
+                    f"{prefix}chunk_ptr": lr.chunk_ptr,
+                    f"{prefix}chunk_start": lr.chunk_start,
+                    f"{prefix}chunk_end": lr.chunk_end,
+                    f"{prefix}long_row_threshold": lr.threshold,
+                    f"{prefix}owner": lr.owner,
+                }
+            )
+    # Graph-only arrays precomputed by coo_to_csr, so they are not rebuilt on
+    # every call (older CSRs without them still work).
+    kwargs["t_edge"] = t.edge
+    out = _gatv2_scores(
+        row,
+        col,
+        x_dst,
+        x_src,
+        att,
+        csr.rowptr,
+        csr.col,
+        csr.perm,
+        t.rowptr,
+        t.col,
+        t.perm,
+        negative_slope=float(negative_slope),
+        stream=stream,
+        **kwargs,
+    )
+    if single_head:
+        out = out[:, 0]
+    return out.astype(x_dst.dtype)

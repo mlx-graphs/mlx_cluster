@@ -9,6 +9,7 @@
 #include <random_walks/NeighborSample.h>
 #include <sampling/HeteroNeighborSample.h>
 #include <sparse/SpMM.h>
+#include <sparse/GATv2Scores.h>
 #include <nanobind/stl/optional.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/tuple.h>
@@ -411,5 +412,75 @@ NB_MODULE(_ext, m){
         R"(
             Low-level multi-head edge scores. Prefer
             :func:`mlx_cluster.edge_scores`.
+        )");
+
+    m.def(
+        "_gatv2_scores",
+        [](const mx::array& row,
+           const mx::array& col,
+           const mx::array& x_dst,
+           const mx::array& x_src,
+           const mx::array& att,
+           const mx::array& rowptr,
+           const mx::array& csr_col,
+           const mx::array& csr_perm,
+           const mx::array& t_rowptr,
+           const mx::array& t_col,
+           const mx::array& t_perm,
+           std::optional<mx::array> long_rows,
+           std::optional<mx::array> chunk_ptr,
+           std::optional<mx::array> chunk_start,
+           std::optional<mx::array> chunk_end,
+           int long_row_threshold,
+           std::optional<mx::array> t_long_rows,
+           std::optional<mx::array> t_chunk_ptr,
+           std::optional<mx::array> t_chunk_start,
+           std::optional<mx::array> t_chunk_end,
+           int t_long_row_threshold,
+           float negative_slope,
+           std::optional<mx::array> t_edge,
+           std::optional<mx::array> owner,
+           std::optional<mx::array> t_owner,
+           nb::object stream) {
+          auto make_long = [](auto& rows, auto& ptr, auto& start, auto& end,
+                              int threshold)
+              -> std::optional<mlx_sparse::LongRows> {
+            if (!rows) {
+              return std::nullopt;
+            }
+            if (!ptr || !start || !end) {
+              throw std::invalid_argument(
+                  "[gatv2_scores] long_rows needs chunk_ptr, chunk_start and chunk_end.");
+            }
+            return mlx_sparse::LongRows{*rows, *ptr, *start, *end, threshold};
+          };
+          mlx_sparse::CSRTranspose tr{
+              t_rowptr, t_col, t_perm,
+              make_long(t_long_rows, t_chunk_ptr, t_chunk_start, t_chunk_end,
+                        t_long_row_threshold)};
+          return mlx_sparse::gatv2_scores(
+              row, col, x_dst, x_src, att, rowptr, csr_col, csr_perm, tr,
+              make_long(long_rows, chunk_ptr, chunk_start, chunk_end,
+                        long_row_threshold),
+              negative_slope, t_edge, owner, t_owner,
+              stream.is_none() ? mx::StreamOrDevice{}
+                               : nb::cast<mx::StreamOrDevice>(stream));
+        },
+        "row"_a, "col"_a, "x_dst"_a, "x_src"_a, "att"_a,
+        "rowptr"_a, "csr_col"_a, "csr_perm"_a,
+        "t_rowptr"_a, "t_col"_a, "t_perm"_a,
+        nb::kw_only(),
+        "long_rows"_a = nb::none(), "chunk_ptr"_a = nb::none(),
+        "chunk_start"_a = nb::none(), "chunk_end"_a = nb::none(),
+        "long_row_threshold"_a = 0,
+        "t_long_rows"_a = nb::none(), "t_chunk_ptr"_a = nb::none(),
+        "t_chunk_start"_a = nb::none(), "t_chunk_end"_a = nb::none(),
+        "t_long_row_threshold"_a = 0,
+        "negative_slope"_a = 0.2f, "t_edge"_a = nb::none(),
+        "owner"_a = nb::none(), "t_owner"_a = nb::none(),
+        "stream"_a = nb::none(),
+        R"(
+            Low-level GATv2 attention scores. Prefer
+            :func:`mlx_cluster.gatv2_scores`.
         )");
 }
