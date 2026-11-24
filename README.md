@@ -7,7 +7,7 @@ High-performance graph algorithms optimized for Apple's MLX framework, featuring
 [![Python 3.10+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 
 **[Documentation](https://mlx-graphs.github.io/mlx_cluster/)** |
-**[Quickstart](https://mlx-graphs.github.io/mlx_cluster/quickstart.html)** |
+**[Quickstart](https://mlx-graphs.github.io/mlx_cluster/quickstart/)** |
 
 ## Features
 
@@ -31,7 +31,7 @@ pip install mlx-cluster
 ### From Source
 
 ```bash
-git clone https://github.com/vinayhpandya/mlx_cluster.git
+git clone https://github.com/mlx-graphs/mlx_cluster.git
 cd mlx_cluster
 pip install -e .
 ```
@@ -39,7 +39,7 @@ pip install -e .
 ### Development Installation
 
 ```bash
-git clone https://github.com/vinayhpandya/mlx_cluster.git
+git clone https://github.com/mlx-graphs/mlx_cluster.git
 cd mlx_cluster
 pip install -e . --verbose
 ```
@@ -168,7 +168,7 @@ grad = mx.grad(lambda x: spmm_csr(csr.rowptr, csr.col, x,
 On an Apple M4 Pro, a GCN training step on a 1M-edge graph (256 features) is
 about 4x faster and uses about 4.6x less memory than gather-scatter. mlx-graphs
 uses these kernels automatically via `@fused_message_passing`. See the
-[SpMM guide](https://vinayhpandya.github.io/mlx_cluster/sparse.html) for
+[SpMM guide](https://mlx-graphs.github.io/mlx_cluster/sparse/) for
 conventions (empty rows, ties) and details.
 
 For attention layers, `edge_scores` computes one dot-product score per edge

@@ -51,4 +51,5 @@ __pycache__/
 build/
 dist/
 .vscode/
-docs/_build/
+# documentation site built by zensical
+site/
