@@ -1,8 +1,10 @@
 #include <algorithm>
 #include <dlfcn.h>
 #include <filesystem>
+#include <iterator>
 #include <limits>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 #include "mlx/backend/cpu/encoder.h"
@@ -130,14 +132,22 @@ void GATv2Scores::eval_gpu(
   const uint32_t E = static_cast<uint32_t>(inputs[0].size());
   const uint32_t H = static_cast<uint32_t>(inputs[2].shape(1));
   const uint32_t C = static_cast<uint32_t>(inputs[2].shape(2));
-  const uint32_t EH = E * H;
   const float slope = slope_;
+  // channel counts with a kernel compiled for them (unrolled loop); others
+  // use the generic kernel (_c0)
+  const uint32_t specialized[] = {8, 16, 32, 64, 128};
+  const uint32_t ch =
+      std::find(std::begin(specialized), std::end(specialized), C) !=
+          std::end(specialized)
+      ? C
+      : 0;
 
   auto& s = stream();
   auto& d = mx::metal::device(s.device);
   auto lib = d.get_library("mlx_cluster", binary_dir());
   const std::string idx = inputs[0].dtype() == mx::int32 ? "_i32" : "_i64";
-  auto k = d.get_kernel("gatv2_scores" + idx, lib);
+  auto k = d.get_kernel(
+      "gatv2_scores" + idx + "_c" + std::to_string(ch), lib);
   auto& enc = mx::metal::get_command_encoder(s);
   enc.set_compute_pipeline_state(k);
   for (int i = 0; i < 5; ++i) {
@@ -146,10 +156,13 @@ void GATv2Scores::eval_gpu(
   enc.set_output_array(out, 5);
   enc.set_bytes(H, 6);
   enc.set_bytes(C, 7);
-  enc.set_bytes(EH, 8);
+  enc.set_bytes(E, 8);
   enc.set_bytes(slope, 9);
-  // one SIMD group (32 lanes) per (edge, head), 8 of them per threadgroup
-  enc.dispatch_threads(MTL::Size(32, EH, 1), MTL::Size(32, 8, 1));
+  // one SIMD group (32 lanes) per (head, edge), 8 of them per threadgroup:
+  // the heads of an edge, then the next edges
+  const size_t th = std::min<size_t>(H, 8);
+  const size_t tz = std::max<size_t>(1, 8 / th);
+  enc.dispatch_threads(MTL::Size(32, H, E), MTL::Size(32, th, tz));
 }
 #else
 void GATv2Scores::eval_gpu(
