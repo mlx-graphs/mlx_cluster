@@ -28,8 +28,8 @@ jobs:
           python -m pip install --upgrade "setuptools>=70.1" wheel nanobind==3.1.0 "cmake>=3.24" "mlx>=0.32"
 
           # test dependencies, except mlx-graphs
-          python -m pip install torch "pytest==7.4.4" "scipy>=1.13.0" "numpy>=1.26.3" \
-            "requests==2.31.0" "fsspec[http]==2024.2.0" "tqdm==4.66.1"
+          python -m pip install torch "pytest>=9.0.3" "scipy>=1.13.0" "numpy>=1.26.3" \
+            "requests>=2.33.0" "fsspec[http]>=2026.6.0" "tqdm>=4.66.3"
 
           # released mlx-graphs pins mlx<0.31 and pulls mlx_cluster from PyPI;
           # --no-deps keeps both from replacing what we install here
